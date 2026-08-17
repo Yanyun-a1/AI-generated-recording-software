@@ -89,10 +89,8 @@ export default function Home() {
                 <h1
                   className="text-xl font-bold tracking-wide"
                   style={{
-                    background: `linear-gradient(135deg, ${style.primaryColor}, ${style.secondaryColor}, ${style.accentColor})`,
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    textShadow: `0 0 30px ${style.primaryColor}40`,
+                    color: style.primaryColor,
+                    textShadow: `0 0 20px ${style.primaryColor}80, 0 0 40px ${style.secondaryColor}40, 0 1px 2px rgba(0,0,0,0.8)`,
                   }}
                 >
                   大数据竞赛程序记录
