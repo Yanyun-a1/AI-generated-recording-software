@@ -11,13 +11,42 @@ import { DEFAULT_STYLE } from '@/lib/types';
 import type { MediaItem, StyleConfig } from '@/lib/types';
 import { getDateKey, isToday, formatLunar } from '@/lib/dateUtils';
 import { exportRecords } from '@/lib/exportUtils';
+import { getRecords, deleteRecord, saveStyle, updateRecord, saveTitle, DEFAULT_TITLE } from '@/lib/storage-client';
 
 type Tab = 'records' | 'add' | 'style';
+
+/** 副标题：霓虹渐变文字，白色闪光跟随鼠标滑动 */
+function Subtitle({ secondaryColor, accentColor }: { secondaryColor: string; accentColor: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  return (
+    <p
+      ref={ref}
+      onMouseMove={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = rect.width ? ((e.clientX - rect.left) / rect.width) * 100 : 50;
+        e.currentTarget.style.setProperty('--glow-x', `${x}%`);
+      }}
+      className="text-sm mt-1 italic tracking-[0.08em] select-none cursor-default"
+      style={{
+        fontFamily: 'Georgia, "Times New Roman", serif',
+        backgroundImage: `radial-gradient(circle 55px at var(--glow-x, 50%) 50%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 60%), linear-gradient(90deg, ${secondaryColor}, ${accentColor}, ${secondaryColor})`,
+        WebkitBackgroundClip: 'text',
+        backgroundClip: 'text',
+        color: 'transparent',
+      }}
+    >
+      Tomorrow Will Be Fine
+    </p>
+  );
+}
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('records');
   const [items, setItems] = useState<MediaItem[]>([]);
   const [style, setStyle] = useState<StyleConfig>(DEFAULT_STYLE);
+  const [title, setTitle] = useState(DEFAULT_TITLE);
+  const [titleEditing, setTitleEditing] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
   const [filterDate, setFilterDate] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [lunarDate, setLunarDate] = useState<string>('');
@@ -31,13 +60,13 @@ export default function Home() {
     setLunarDate(formatLunar(new Date()));
   }, []);
 
-  // 从本地存储层加载记录与样式
+  // 从存储层加载记录与样式（桌面版走 Rust，网页版走 API）
   useEffect(() => {
-    fetch('/api/records')
-      .then((r) => r.json())
+    getRecords()
       .then((data) => {
         if (Array.isArray(data.items)) setItems(data.items);
         if (data.style) setStyle(data.style);
+        if (data.title) setTitle(data.title);
       })
       .catch(() => {});
   }, []);
@@ -49,8 +78,7 @@ export default function Home() {
 
   const handleDeleteItem = async (id: string) => {
     try {
-      const res = await fetch(`/api/records?id=${id}`, { method: 'DELETE' });
-      if (!res.ok) return;
+      await deleteRecord(id);
       setItems((prev) => prev.filter((i) => i.id !== id));
     } catch {
       // ignore
@@ -59,12 +87,7 @@ export default function Home() {
 
   const handleEditItem = async (id: string, title: string, content: string) => {
     try {
-      const res = await fetch(`/api/records`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, title, content }),
-      });
-      if (!res.ok) return;
+      await updateRecord(id, title, content);
       setItems((prev) => prev.map((i) => i.id === id ? { ...i, title, content } : i));
     } catch {
       // ignore
@@ -76,12 +99,20 @@ export default function Home() {
     setStyle(next);
     if (styleTimer.current) clearTimeout(styleTimer.current);
     styleTimer.current = setTimeout(() => {
-      fetch('/api/records', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ style: next }),
-      }).catch(() => {});
+      saveStyle(next).catch(() => {});
     }, 400);
+  };
+
+  // 标题：点击进入编辑，回车/失焦保存，Esc 取消
+  const saveTitleDraft = async () => {
+    const t = titleDraft.trim() || DEFAULT_TITLE;
+    setTitleEditing(false);
+    setTitle(t);
+    try {
+      await saveTitle(t);
+    } catch {
+      // ignore
+    }
   };
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
@@ -158,16 +189,43 @@ export default function Home() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <h1
-                  className="text-xl font-bold tracking-wide"
-                  style={{
-                    color: style.primaryColor,
-                    textShadow: '0 1px 3px rgba(0,0,0,0.9)',
-                  }}
-                >
-                  大数据竞赛程序记录
-                </h1>
-                <p className="text-xs text-white/30 mt-1">Big Data Competition Recorder</p>
+                {titleEditing ? (
+                  <input
+                    autoFocus
+                    value={titleDraft}
+                    onChange={(e) => setTitleDraft(e.target.value)}
+                    onBlur={saveTitleDraft}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveTitleDraft();
+                      if (e.key === 'Escape') setTitleEditing(false);
+                    }}
+                    maxLength={30}
+                    className="w-full bg-white/5 border border-white/20 text-xl font-bold tracking-wide px-2 py-0.5 outline-none focus:border-white/40"
+                    style={{ color: style.primaryColor, borderRadius: 6 }}
+                  />
+                ) : (
+                  <h1
+                    className="text-xl font-bold tracking-wide cursor-text group flex items-center gap-1.5"
+                    style={{
+                      color: style.primaryColor,
+                      textShadow: '0 1px 3px rgba(0,0,0,0.9)',
+                    }}
+                    onClick={() => { setTitleDraft(title); setTitleEditing(true); }}
+                    title="点击修改标题"
+                  >
+                    <span>{title}</span>
+                    <svg
+                      className="w-3.5 h-3.5 opacity-0 group-hover:opacity-40 transition-opacity"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                    </svg>
+                  </h1>
+                )}
+                <Subtitle secondaryColor={style.secondaryColor} accentColor={style.accentColor} />
               </div>
               <div className="flex flex-col items-end gap-2">
                 <DateDisplay dateFormat={style.dateFormat} primaryColor={style.primaryColor} />

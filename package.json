@@ -11,7 +11,10 @@
     "lint:style": "stylelint \"src/**/*.css\"",
     "start": "bash ./scripts/start.sh",
     "ts-check": "tsc -p tsconfig.json",
-    "validate": "pnpm dlx concurrently --group --names lint-tsc,lint-build,lint-style \"pnpm ts-check\" \"pnpm lint:build\" \"pnpm lint:style\""
+    "validate": "pnpm dlx concurrently --group --names lint-tsc,lint-build,lint-style \"pnpm ts-check\" \"pnpm lint:build\" \"pnpm lint:style\"",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.958.0",
@@ -44,6 +47,9 @@
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@supabase/supabase-js": "2.95.3",
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-dialog": "^2.7.2",
+    "@tauri-apps/plugin-fs": "^2.5.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -79,6 +85,7 @@
     "@react-dev-inspector/babel-plugin": "^2.0.1",
     "@react-dev-inspector/middleware": "^2.0.1",
     "@tailwindcss/postcss": "^4",
+    "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^20",
     "@types/pg": "^8.16.0",
     "@types/react": "^19",

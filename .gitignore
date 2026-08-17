@@ -77,6 +77,10 @@ logs/
 *.gz
 
 # 文档类也默认加入
+
+# Tauri
+src-tauri/target/
+out/
 *.pdf
 *.docx
 *.doc

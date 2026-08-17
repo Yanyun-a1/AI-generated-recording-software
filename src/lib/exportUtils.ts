@@ -2,6 +2,111 @@ import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import type { MediaItem } from './types';
+import { readFileBytes, isTauri } from './storage-client';
+
+/** 富文本 HTML 解析：把 font/b/u 等格式映射为 docx 的 TextRun 格式 */
+interface RunStyle {
+  bold: boolean;
+  underline: boolean;
+  italic: boolean;
+  color?: string;
+  font?: string;
+}
+
+function mergeElementStyle(el: Element, acc: RunStyle): RunStyle {
+  const s: RunStyle = { ...acc };
+  const tag = el.tagName.toUpperCase();
+  if (tag === 'B' || tag === 'STRONG') s.bold = true;
+  if (tag === 'U') s.underline = true;
+  if (tag === 'I' || tag === 'EM') s.italic = true;
+  if (tag === 'FONT') {
+    const color = el.getAttribute('color');
+    if (color) s.color = color.replace(/^#/, '');
+    const face = el.getAttribute('face');
+    if (face) s.font = face.split(',')[0].replace(/"/g, '');
+  }
+  return s;
+}
+
+function htmlToDocxParagraphs(html: string): Paragraph[] {
+  if (typeof document === 'undefined') return [];
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const paragraphs: Paragraph[] = [];
+  let runs: TextRun[] = [];
+
+  const flush = () => {
+    if (runs.length) {
+      paragraphs.push(new Paragraph({ children: runs, spacing: { after: 100 } }));
+      runs = [];
+    }
+  };
+
+  const walkChildren = (el: Element, style: RunStyle) => {
+    el.childNodes.forEach((child) => walk(child, style));
+  };
+
+  const walk = (node: Node, style: RunStyle) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent || '';
+      if (text) {
+        runs.push(
+          new TextRun({
+            text,
+            size: 24,
+            bold: style.bold,
+            underline: style.underline ? {} : undefined,
+            italics: style.italic,
+            color: style.color,
+            font: style.font,
+          })
+        );
+      }
+      return;
+    }
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as Element;
+      const tag = el.tagName.toUpperCase();
+      const s = mergeElementStyle(el, style);
+      if (tag === 'BR') {
+        flush();
+        return;
+      }
+      if (tag === 'DIV' || tag === 'P') {
+        walkChildren(el, s);
+        flush();
+        return;
+      }
+      walkChildren(el, s);
+    }
+  };
+
+  walkChildren(doc.body, { bold: false, underline: false, italic: false });
+  flush();
+  return paragraphs;
+}
+
+/** 根据文件路径推断 MIME */
+function getMimeFromPath(path: string): string {
+  const ext = path.split('.').pop()?.toLowerCase() || '';
+  const map: Record<string, string> = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    gif: 'image/gif',
+    webp: 'image/webp',
+    mp4: 'video/mp4',
+    webm: 'video/webm',
+    mov: 'video/quicktime',
+  };
+  return map[ext] || 'application/octet-stream';
+}
+
+/** 读取媒体文件为 Blob（桌面版走 Rust 读盘，网页版走 HTTP） */
+async function getMediaBlob(item: MediaItem): Promise<Blob> {
+  const bytes = await readFileBytes(item.content);
+  return new Blob([new Uint8Array(bytes)], { type: getMimeFromPath(item.content) });
+}
 
 function getWeekNumber(date: Date): number {
   const start = new Date(date.getFullYear(), 0, 1);
@@ -82,12 +187,7 @@ async function createWordDocument(item: MediaItem): Promise<Blob> {
           ],
           spacing: { after: 400 },
         }),
-        ...item.content.split('\n').map(line =>
-          new Paragraph({
-            children: [new TextRun({ text: line, size: 24 })],
-            spacing: { after: 100 },
-          })
-        ),
+        ...htmlToDocxParagraphs(item.content),
       ],
     }],
   });
@@ -106,18 +206,13 @@ function base64ToBlob(base64: string): Blob {
   }
   return new Blob([u8arr], { type: mime });
 }
-
 function getFileExtension(item: MediaItem): string {
   if (item.type === 'text') return '.docx';
-  if (item.type === 'image') {
-    const mime = item.content.split(',')[0].match(/:(.*?);/)?.[1] || 'image/png';
-    return '.' + mime.split('/')[1].replace('jpeg', 'jpg');
-  }
-  if (item.type === 'video') {
-    const mime = item.content.split(',')[0].match(/:(.*?);/)?.[1] || 'video/mp4';
-    return '.' + mime.split('/')[1];
-  }
-  return '.txt';
+  // content 形如 uploads/images/xxx.png，从路径取扩展名
+  const name = item.content.split('/').pop() || '';
+  const dot = name.lastIndexOf('.');
+  if (dot > 0) return name.slice(dot);
+  return item.type === 'image' ? '.png' : '.mp4';
 }
 
 export async function exportRecords(
@@ -149,7 +244,7 @@ export async function exportRecords(
       const wordBlob = await createWordDocument(item);
       zip.file(filePath, wordBlob);
     } else {
-      const blob = base64ToBlob(item.content);
+      const blob = await getMediaBlob(item);
       zip.file(filePath, blob);
     }
   }
@@ -158,5 +253,21 @@ export async function exportRecords(
   
   const levelNames = { daily: '每日', weekly: '每周', monthly: '每月', yearly: '每年' };
   const dateStr = refDate.toISOString().split('T')[0];
-  saveAs(zipBlob, `${levelNames[level]}导出_${dateStr}.zip`);
+  const fileName = `${levelNames[level]}导出_${dateStr}.zip`;
+
+  if (isTauri()) {
+    // 桌面版：弹系统保存对话框，让用户选择路径与文件名
+    const { save } = await import('@tauri-apps/plugin-dialog');
+    const { writeFile } = await import('@tauri-apps/plugin-fs');
+    const target = await save({
+      defaultPath: fileName,
+      filters: [{ name: 'ZIP 压缩包', extensions: ['zip'] }],
+    });
+    if (!target) return; // 用户取消
+    await writeFile(target, new Uint8Array(await zipBlob.arrayBuffer()));
+    return;
+  }
+
+  // 网页版：浏览器下载
+  saveAs(zipBlob, fileName);
 }

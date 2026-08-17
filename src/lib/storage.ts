@@ -18,7 +18,10 @@ const DIRS = {
 export interface StoreData {
   items: MediaItem[];
   style: StyleConfig;
+  title?: string;
 }
+
+export const DEFAULT_TITLE = '大数据竞赛程序记录';
 
 async function ensureUploads() {
   await fs.mkdir(path.join(UPLOADS_ROOT, 'images'), { recursive: true });
@@ -34,9 +37,10 @@ async function readStore(): Promise<StoreData> {
     return {
       items: Array.isArray(data.items) ? data.items : [],
       style: { ...DEFAULT_STYLE, ...(data.style ?? {}) },
+      title: data.title || DEFAULT_TITLE,
     };
   } catch {
-    return { items: [], style: DEFAULT_STYLE };
+    return { items: [], style: DEFAULT_STYLE, title: DEFAULT_TITLE };
   }
 }
 
@@ -91,6 +95,12 @@ export async function updateItem(id: string, updates: { title?: string; content?
 export async function saveStyle(style: StyleConfig) {
   const data = await readStore();
   data.style = style;
+  await writeStore(data);
+}
+
+export async function saveTitle(title: string) {
+  const data = await readStore();
+  data.title = title;
   await writeStore(data);
 }
 
