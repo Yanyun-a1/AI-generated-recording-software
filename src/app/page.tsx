@@ -15,6 +15,31 @@ import { getRecords, deleteRecord, saveStyle, updateRecord, saveTitle, DEFAULT_T
 
 type Tab = 'records' | 'add' | 'style';
 
+/** 副标题：霓虹渐变文字，白色闪光跟随鼠标滑动 */
+function Subtitle({ secondaryColor, accentColor }: { secondaryColor: string; accentColor: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  return (
+    <p
+      ref={ref}
+      onMouseMove={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = rect.width ? ((e.clientX - rect.left) / rect.width) * 100 : 50;
+        e.currentTarget.style.setProperty('--glow-x', `${x}%`);
+      }}
+      className="text-sm mt-1 italic tracking-[0.08em] select-none cursor-default"
+      style={{
+        fontFamily: 'Georgia, "Times New Roman", serif',
+        backgroundImage: `radial-gradient(circle 55px at var(--glow-x, 50%) 50%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 60%), linear-gradient(90deg, ${secondaryColor}, ${accentColor}, ${secondaryColor})`,
+        WebkitBackgroundClip: 'text',
+        backgroundClip: 'text',
+        color: 'transparent',
+      }}
+    >
+      Tomorrow Will Be Fine
+    </p>
+  );
+}
+
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('records');
   const [items, setItems] = useState<MediaItem[]>([]);
@@ -200,16 +225,7 @@ export default function Home() {
                     </svg>
                   </h1>
                 )}
-                <p
-                  className="text-xs mt-1 italic tracking-[0.08em]"
-                  style={{
-                    color: 'rgba(255,255,255,0.35)',
-                    fontFamily: 'Georgia, "Times New Roman", serif',
-                    textShadow: '0 1px 2px rgba(0,0,0,0.8)',
-                  }}
-                >
-                  Tomorrow Will Be Fine
-                </p>
+                <Subtitle secondaryColor={style.secondaryColor} accentColor={style.accentColor} />
               </div>
               <div className="flex flex-col items-end gap-2">
                 <DateDisplay dateFormat={style.dateFormat} primaryColor={style.primaryColor} />
