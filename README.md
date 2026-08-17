@@ -1,363 +1,112 @@
-# projects
+# AI-generated-recording-software
 
-这是一个基于 [Next.js 16](https://nextjs.org) + [shadcn/ui](https://ui.shadcn.com) 的全栈应用项目，由扣子编程 CLI 创建。
+**大数据竞赛程序记录软件** —— 支持文字、图片、视频等多媒体内容导入与管理的记录工具，紫色霓虹流动波纹背景，支持自定义样式。
 
-## 快速开始
+项目以**同一套代码运行两种形态**：
 
-### 启动开发服务器
+| 形态 | 说明 | 存储 |
+|---|---|---|
+| 🌐 **网页版** | Next.js 全栈应用（浏览器访问） | 项目目录 `uploads/`（API + 文件系统） |
+| 🖥️ **桌面版（Windows）** | Tauri 2 桌面软件（.exe 安装包） | 应用数据目录 `uploads/`（Rust 直接读写文件） |
 
-```bash
-coze-dev dev
-```
+> 两形态通过 `src/lib/storage-client.ts` 适配层自动切换，前端代码共用。
 
-启动后，在浏览器中打开 [http://localhost:5000](http://localhost:5000) 查看应用。
+---
 
-开发服务器支持热更新，修改代码后页面会自动刷新。
+## ✨ 功能特性
 
-### 构建生产版本
+- 📝 **多媒体记录**：文字（富文本：字体/颜色/加粗/下划线/自定义字体导入）、图片、视频
+- ✏️ **编辑与删除**：记录可随时修改（与添加共用同一富文本编辑器，格式不丢失）
+- 📅 **日期筛选**：中文日历弹层，按天筛选记录；底部显示公历/农历日期
+- 🔍 **标题搜索**：放大镜图标切换搜索栏
+- 📊 **网格/列表双视图**：卡片紧凑布局切换
+- 📤 **导出功能**：按天/周/月/年导出 zip（文字转 Word 且保留富文本格式，媒体原格式导出）
+- 🎨 **样式定制**：预设主题（紫夜霓虹/极光幻境/赛博朋克/深海幽光/烈焰星辰）+ 自由取色 + 动画速度/透明度/模糊/字号/圆角调节
+- ✨ **可编辑标题**：点击标题即可改名（持久化），颜色随主题色；副标题为霓虹渐变 + 鼠标闪光跟随
+- 💾 **数据落盘**：所有记录以真实文件存储（images/videos/texts + index.json），可备份、可迁移
 
-```bash
-coze-dev build
-```
+## 🚀 网页版开发
 
-### 启动生产服务器
-
-```bash
-coze-dev start
-```
-
-## 项目结构
-
-```
-src/
-├── app/                      # Next.js App Router 目录
-│   ├── layout.tsx           # 根布局组件
-│   ├── page.tsx             # 首页
-│   ├── globals.css          # 全局样式（包含 shadcn 主题变量）
-│   └── [route]/             # 其他路由页面
-├── components/              # React 组件目录
-│   └── ui/                  # shadcn/ui 基础组件（优先使用）
-│       ├── button.tsx
-│       ├── card.tsx
-│       └── ...
-├── lib/                     # 工具函数库
-│   └── utils.ts            # cn() 等工具函数
-└── hooks/                   # 自定义 React Hooks（可选）
-
-server/
-├── index.ts                 # 自定义服务器入口
-├── tsconfig.json           # Server TypeScript 配置
-└── dist/                    # 编译输出目录（自动生成）
-```
-
-## 核心开发规范
-
-### 1. 组件开发
-
-**优先使用 shadcn/ui 基础组件**
-
-本项目已预装完整的 shadcn/ui 组件库，位于 `src/components/ui/` 目录。开发时应优先使用这些组件作为基础：
-
-```tsx
-// ✅ 推荐：使用 shadcn 基础组件
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-
-export default function MyComponent() {
-  return (
-    <Card>
-      <CardHeader>标题</CardHeader>
-      <CardContent>
-        <Input placeholder="输入内容" />
-        <Button>提交</Button>
-      </CardContent>
-    </Card>
-  );
-}
-```
-
-**可用的 shadcn 组件清单**
-
-- 表单：`button`, `input`, `textarea`, `select`, `checkbox`, `radio-group`, `switch`, `slider`
-- 布局：`card`, `separator`, `tabs`, `accordion`, `collapsible`, `scroll-area`
-- 反馈：`alert`, `alert-dialog`, `dialog`, `toast`, `sonner`, `progress`
-- 导航：`dropdown-menu`, `menubar`, `navigation-menu`, `context-menu`
-- 数据展示：`table`, `avatar`, `badge`, `hover-card`, `tooltip`, `popover`
-- 其他：`calendar`, `command`, `carousel`, `resizable`, `sidebar`
-
-详见 `src/components/ui/` 目录下的具体组件实现。
-
-### 2. 路由开发
-
-Next.js 使用文件系统路由，在 `src/app/` 目录下创建文件夹即可添加路由：
+环境要求：Node.js 20+、pnpm 9+
 
 ```bash
-# 创建新路由 /about
-src/app/about/page.tsx
-
-# 创建动态路由 /posts/[id]
-src/app/posts/[id]/page.tsx
-
-# 创建路由组（不影响 URL）
-src/app/(marketing)/about/page.tsx
-
-# 创建 API 路由
-src/app/api/users/route.ts
+pnpm install        # 安装依赖
+pnpm dev            # 启动开发服务器（http://localhost:5000）
+pnpm build          # 生产构建
+pnpm start          # 启动生产服务器
 ```
 
-**页面组件示例**
+网页版数据存储在项目根 `uploads/` 目录（已被 git 忽略）。
 
-```tsx
-// src/app/about/page.tsx
-import { Button } from '@/components/ui/button';
+## 🖥️ 桌面版（Windows）构建
 
-export const metadata = {
-  title: '关于我们',
-  description: '关于页面描述',
-};
+### 环境要求
 
-export default function AboutPage() {
-  return (
-    <div>
-      <h1>关于我们</h1>
-      <Button>了解更多</Button>
-    </div>
-  );
-}
-```
+- Rust 工具链（[rustup](https://rustup.rs)）
+- Visual Studio Build Tools（勾选「C++ 桌面开发」，用于 Rust MSVC 链接）
+- WebView2 Runtime（Win10/11 一般自带）
+- Node.js 20+、pnpm 9+
 
-**动态路由示例**
-
-```tsx
-// src/app/posts/[id]/page.tsx
-export default async function PostPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-
-  return <div>文章 ID: {id}</div>;
-}
-```
-
-**API 路由示例**
-
-```tsx
-// src/app/api/users/route.ts
-import { NextResponse } from 'next/server';
-
-export async function GET() {
-  return NextResponse.json({ users: [] });
-}
-
-export async function POST(request: Request) {
-  const body = await request.json();
-  return NextResponse.json({ success: true });
-}
-```
-
-### 3. 依赖管理
-
-**必须使用 pnpm 管理依赖**
+### 构建安装包
 
 ```bash
-# ✅ 安装依赖
 pnpm install
-
-# ✅ 添加新依赖
-pnpm add package-name
-
-# ✅ 添加开发依赖
-pnpm add -D package-name
-
-# ❌ 禁止使用 npm 或 yarn
-# npm install  # 错误！
-# yarn add     # 错误！
+pnpm tauri:build
 ```
 
-项目已配置 `preinstall` 脚本，使用其他包管理器会报错。
+产物位于：
 
-### 4. 样式开发
-
-**使用 Tailwind CSS v4**
-
-本项目使用 Tailwind CSS v4 进行样式开发，并已配置 shadcn 主题变量。
-
-```tsx
-// 使用 Tailwind 类名
-<div className="flex items-center gap-4 p-4 rounded-lg bg-background">
-  <Button className="bg-primary text-primary-foreground">
-    主要按钮
-  </Button>
-</div>
-
-// 使用 cn() 工具函数合并类名
-import { cn } from '@/lib/utils';
-
-<div className={cn(
-  "base-class",
-  condition && "conditional-class",
-  className
-)}>
-  内容
-</div>
+```
+src-tauri/target/release/bundle/nsis/大数据竞赛程序记录_1.0.0_x64-setup.exe   # 安装向导
 ```
 
-**主题变量**
+### 桌面版数据位置
 
-主题变量定义在 `src/app/globals.css` 中，支持亮色/暗色模式：
-
-- `--background`, `--foreground`
-- `--primary`, `--primary-foreground`
-- `--secondary`, `--secondary-foreground`
-- `--muted`, `--muted-foreground`
-- `--accent`, `--accent-foreground`
-- `--destructive`, `--destructive-foreground`
-- `--border`, `--input`, `--ring`
-
-### 5. 表单开发
-
-推荐使用 `react-hook-form` + `zod` 进行表单开发：
-
-```tsx
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-
-const formSchema = z.object({
-  username: z.string().min(2, '用户名至少 2 个字符'),
-  email: z.string().email('请输入有效的邮箱'),
-});
-
-export default function MyForm() {
-  const form = useForm({
-    resolver: zodResolver(formSchema),
-    defaultValues: { username: '', email: '' },
-  });
-
-  const onSubmit = (data: z.infer<typeof formSchema>) => {
-    console.log(data);
-  };
-
-  return (
-    <form onSubmit={form.handleSubmit(onSubmit)}>
-      <Input {...form.register('username')} />
-      <Input {...form.register('email')} />
-      <Button type="submit">提交</Button>
-    </form>
-  );
-}
+```
+C:\Users\<用户名>\AppData\Roaming\com.bigdata.recorder\uploads\
+├── images\   videos\   texts\   index.json
 ```
 
-### 6. 数据获取
+> 桌面版使用 Tauri 命令（Rust）直接读写本地文件，不依赖任何网络服务。
 
-**服务端组件（推荐）**
+### 构建原理说明
 
-```tsx
-// src/app/posts/page.tsx
-async function getPosts() {
-  const res = await fetch('https://api.example.com/posts', {
-    cache: 'no-store', // 或 'force-cache'
-  });
-  return res.json();
-}
+- 前端使用 `output: 'export'` 静态导出（见 `next.config.tauri.ts`）
+- 静态导出与 API 路由不兼容，构建脚本 `scripts/build-tauri.mjs` 会在构建期间临时隐藏 `src/app/api` 与 `src/app/uploads`，完成后自动恢复
+- 桌面版存储能力由 Rust 后端提供（`src-tauri/src/main.rs` 中的 Tauri 命令）
 
-export default async function PostsPage() {
-  const posts = await getPosts();
+## 📁 目录结构
 
-  return (
-    <div>
-      {posts.map(post => (
-        <div key={post.id}>{post.title}</div>
-      ))}
-    </div>
-  );
-}
+```
+├── src/
+│   ├── app/                  # 页面（page.tsx 主页、api/ 存储接口）
+│   ├── components/           # 组件（RichTextEditor 富文本、MediaImporter 导入、MediaCard 卡片等）
+│   ├── lib/                  # 工具库（storage.ts 存储层、storage-client.ts 双环境适配、exportUtils 导出）
+│   └── hooks/
+├── scripts/
+│   ├── dev.sh / build.sh     # 网页版脚本
+│   └── build-tauri.mjs       # 桌面版前端导出脚本
+├── src-tauri/                # Tauri 桌面壳（Rust）
+│   ├── src/main.rs           # 存储命令：get_records / save_text / save_file / delete_record / update_record / save_title / read_file_bytes
+│   ├── tauri.conf.json
+│   └── capabilities/
+└── uploads/                  # 运行时数据（git 忽略）
 ```
 
-**客户端组件**
+## 🛠️ 技术栈
 
-```tsx
-'use client';
+- **框架**: Next.js 16 (App Router) / React 19 / TypeScript 5
+- **桌面壳**: Tauri 2（Rust），插件：dialog / fs / protocol-asset
+- **UI**: shadcn/ui + Tailwind CSS v4 + Lucide React
+- **富文本**: contentEditable + execCommand（轻量自研）
+- **导出**: docx / jszip / file-saver（桌面版走 Tauri 原生保存对话框）
+- **农历**: lunar-javascript
+- **包管理器**: pnpm 9+（强制）
 
-import { useEffect, useState } from 'react';
+## 📌 开发规范
 
-export default function ClientComponent() {
-  const [data, setData] = useState(null);
-
-  useEffect(() => {
-    fetch('/api/data')
-      .then(res => res.json())
-      .then(setData);
-  }, []);
-
-  return <div>{JSON.stringify(data)}</div>;
-}
-```
-
-## 常见开发场景
-
-### 添加新页面
-
-1. 在 `src/app/` 下创建文件夹和 `page.tsx`
-2. 使用 shadcn 组件构建 UI
-3. 根据需要添加 `layout.tsx` 和 `loading.tsx`
-
-### 创建业务组件
-
-1. 在 `src/components/` 下创建组件文件（非 UI 组件）
-2. 优先组合使用 `src/components/ui/` 中的基础组件
-3. 使用 TypeScript 定义 Props 类型
-
-### 添加全局状态
-
-推荐使用 React Context 或 Zustand：
-
-```tsx
-// src/lib/store.ts
-import { create } from 'zustand';
-
-interface Store {
-  count: number;
-  increment: () => void;
-}
-
-export const useStore = create<Store>((set) => ({
-  count: 0,
-  increment: () => set((state) => ({ count: state.count + 1 })),
-}));
-```
-
-### 集成数据库
-
-推荐使用 Prisma 或 Drizzle ORM，在 `src/lib/db.ts` 中配置。
-
-## 技术栈
-
-- **框架**: Next.js 16.1.1 (App Router)
-- **UI 组件**: shadcn/ui (基于 Radix UI)
-- **样式**: Tailwind CSS v4
-- **表单**: React Hook Form + Zod
-- **图标**: Lucide React
-- **字体**: Geist Sans & Geist Mono
-- **包管理器**: pnpm 9+
-- **TypeScript**: 5.x
-
-## 参考文档
-
-- [Next.js 官方文档](https://nextjs.org/docs)
-- [shadcn/ui 组件文档](https://ui.shadcn.com)
-- [Tailwind CSS 文档](https://tailwindcss.com/docs)
-- [React Hook Form](https://react-hook-form.com)
-
-## 重要提示
-
-1. **必须使用 pnpm** 作为包管理器
-2. **优先使用 shadcn/ui 组件** 而不是从零开发基础组件
-3. **遵循 Next.js App Router 规范**，正确区分服务端/客户端组件
-4. **使用 TypeScript** 进行类型安全开发
-5. **使用 `@/` 路径别名** 导入模块（已配置）
+1. **必须使用 pnpm**（`preinstall` 脚本强制）
+2. **存储层改动**需同时考虑双环境：`src/lib/storage.ts`（网页 API）与 `src-tauri/src/main.rs`（桌面命令）保持接口一致
+3. 前端数据读写统一走 `src/lib/storage-client.ts`，禁止直接 fetch /api（桌面版无服务器）
+4. **类型检查**：`pnpm ts-check`；**桌面编译检查**：`cd src-tauri && cargo check`
+5. 桌面版迭代在 `feat/tauri-desktop` 分支进行，稳定后合并回 `main`
