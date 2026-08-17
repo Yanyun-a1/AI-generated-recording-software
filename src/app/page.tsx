@@ -11,7 +11,7 @@ import { DEFAULT_STYLE } from '@/lib/types';
 import type { MediaItem, StyleConfig } from '@/lib/types';
 import { getDateKey, isToday, formatLunar } from '@/lib/dateUtils';
 import { exportRecords } from '@/lib/exportUtils';
-import { getRecords, deleteRecord, saveStyle, updateRecord } from '@/lib/storage-client';
+import { getRecords, deleteRecord, saveStyle, updateRecord, saveTitle, DEFAULT_TITLE } from '@/lib/storage-client';
 
 type Tab = 'records' | 'add' | 'style';
 
@@ -19,6 +19,9 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('records');
   const [items, setItems] = useState<MediaItem[]>([]);
   const [style, setStyle] = useState<StyleConfig>(DEFAULT_STYLE);
+  const [title, setTitle] = useState(DEFAULT_TITLE);
+  const [titleEditing, setTitleEditing] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
   const [filterDate, setFilterDate] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [lunarDate, setLunarDate] = useState<string>('');
@@ -38,6 +41,7 @@ export default function Home() {
       .then((data) => {
         if (Array.isArray(data.items)) setItems(data.items);
         if (data.style) setStyle(data.style);
+        if (data.title) setTitle(data.title);
       })
       .catch(() => {});
   }, []);
@@ -72,6 +76,18 @@ export default function Home() {
     styleTimer.current = setTimeout(() => {
       saveStyle(next).catch(() => {});
     }, 400);
+  };
+
+  // 标题：点击进入编辑，回车/失焦保存，Esc 取消
+  const saveTitleDraft = async () => {
+    const t = titleDraft.trim() || DEFAULT_TITLE;
+    setTitleEditing(false);
+    setTitle(t);
+    try {
+      await saveTitle(t);
+    } catch {
+      // ignore
+    }
   };
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
@@ -148,15 +164,42 @@ export default function Home() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <h1
-                  className="text-xl font-bold tracking-wide"
-                  style={{
-                    color: style.primaryColor,
-                    textShadow: '0 1px 3px rgba(0,0,0,0.9)',
-                  }}
-                >
-                  大数据竞赛程序记录
-                </h1>
+                {titleEditing ? (
+                  <input
+                    autoFocus
+                    value={titleDraft}
+                    onChange={(e) => setTitleDraft(e.target.value)}
+                    onBlur={saveTitleDraft}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveTitleDraft();
+                      if (e.key === 'Escape') setTitleEditing(false);
+                    }}
+                    maxLength={30}
+                    className="w-full bg-white/5 border border-white/20 text-xl font-bold tracking-wide px-2 py-0.5 outline-none focus:border-white/40"
+                    style={{ color: style.primaryColor, borderRadius: 6 }}
+                  />
+                ) : (
+                  <h1
+                    className="text-xl font-bold tracking-wide cursor-text group flex items-center gap-1.5"
+                    style={{
+                      color: style.primaryColor,
+                      textShadow: '0 1px 3px rgba(0,0,0,0.9)',
+                    }}
+                    onClick={() => { setTitleDraft(title); setTitleEditing(true); }}
+                    title="点击修改标题"
+                  >
+                    <span>{title}</span>
+                    <svg
+                      className="w-3.5 h-3.5 opacity-0 group-hover:opacity-40 transition-opacity"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                    </svg>
+                  </h1>
+                )}
                 <p className="text-xs text-white/30 mt-1">Big Data Competition Recorder</p>
               </div>
               <div className="flex flex-col items-end gap-2">

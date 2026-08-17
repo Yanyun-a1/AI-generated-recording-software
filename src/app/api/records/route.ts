@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getStore, addItem, removeItem, updateItem, saveStyle, writeTextFile } from '@/lib/storage';
+import { getStore, addItem, removeItem, updateItem, saveStyle, saveTitle, writeTextFile } from '@/lib/storage';
 import type { MediaItem } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -17,6 +17,12 @@ export async function POST(req: Request) {
   // 保存样式
   if (body.style) {
     await saveStyle(body.style);
+    return NextResponse.json({ ok: true });
+  }
+
+  // 保存应用标题
+  if (body.title) {
+    await saveTitle(String(body.title));
     return NextResponse.json({ ok: true });
   }
 

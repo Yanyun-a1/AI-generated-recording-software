@@ -11,7 +11,10 @@ import type { MediaItem, StyleConfig } from '@/lib/types';
 export interface StoreData {
   items: MediaItem[];
   style: StyleConfig;
+  title?: string;
 }
+
+export const DEFAULT_TITLE = '大数据竞赛程序记录';
 
 /** 是否运行在 Tauri 桌面环境 */
 export function isTauri(): boolean {
@@ -115,6 +118,21 @@ export async function saveStyle(style: StyleConfig): Promise<void> {
     body: JSON.stringify({ style }),
   });
   if (!res.ok) throw new Error('样式保存失败');
+}
+
+/** 保存应用标题 */
+export async function saveTitle(title: string): Promise<void> {
+  if (isTauri()) {
+    const { invoke } = await import('@tauri-apps/api/core');
+    await invoke('save_title', { title });
+    return;
+  }
+  const res = await fetch('/api/records', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title }),
+  });
+  if (!res.ok) throw new Error('标题保存失败');
 }
 
 /** 更新记录（标题；文字记录同时更新内容） */

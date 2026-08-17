@@ -56,6 +56,12 @@ impl Default for StyleConfig {
 struct StoreData {
     items: Vec<MediaItem>,
     style: StyleConfig,
+    #[serde(default = "default_title")]
+    title: String,
+}
+
+fn default_title() -> String {
+    "大数据竞赛程序记录".into()
 }
 
 fn now_ms() -> u64 {
@@ -88,6 +94,7 @@ fn read_store(app: &AppHandle) -> Result<StoreData, String> {
         return Ok(StoreData {
             items: vec![],
             style: StyleConfig::default(),
+            title: default_title(),
         });
     }
     let raw = fs::read_to_string(&file).map_err(|e| format!("读取 index.json 失败: {e}"))?;
@@ -112,6 +119,14 @@ fn get_records(app: AppHandle) -> Result<StoreData, String> {
 fn save_style(app: AppHandle, style: StyleConfig) -> Result<(), String> {
     let mut data = read_store(&app)?;
     data.style = style;
+    write_store(&app, &data)
+}
+
+/// 保存应用标题
+#[tauri::command]
+fn save_title(app: AppHandle, title: String) -> Result<(), String> {
+    let mut data = read_store(&app)?;
+    data.title = title;
     write_store(&app, &data)
 }
 
@@ -242,6 +257,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             get_records,
             save_style,
+            save_title,
             save_text,
             save_file,
             delete_record,
