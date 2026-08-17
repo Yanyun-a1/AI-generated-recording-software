@@ -5,8 +5,10 @@ import NeonBackground from '@/components/NeonBackground';
 import MediaImporter from '@/components/MediaImporter';
 import MediaCard from '@/components/MediaCard';
 import StyleCustomizer from '@/components/StyleCustomizer';
+import DateDisplay from '@/components/DateDisplay';
 import { DEFAULT_STYLE } from '@/lib/types';
 import type { MediaItem, StyleConfig } from '@/lib/types';
+import { getDateKey, isToday } from '@/lib/dateUtils';
 
 type Tab = 'records' | 'add' | 'style';
 
@@ -14,6 +16,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('records');
   const [items, setItems] = useState<MediaItem[]>([]);
   const [style, setStyle] = useState<StyleConfig>(DEFAULT_STYLE);
+  const [filterDate, setFilterDate] = useState<string>('');
   const styleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 从本地存储层加载记录与样式
@@ -89,6 +92,10 @@ export default function Home() {
   const imageCount = items.filter((i) => i.type === 'image').length;
   const videoCount = items.filter((i) => i.type === 'video').length;
 
+  const filteredItems = filterDate
+    ? items.filter((item) => getDateKey(item.createdAt) === filterDate)
+    : items;
+
   return (
     <>
       <NeonBackground
@@ -132,10 +139,13 @@ export default function Home() {
                 </h1>
                 <p className="text-xs text-white/30 mt-1">Big Data Competition Recorder</p>
               </div>
-              <div className="flex gap-3 text-xs text-white/30">
-                <span>{textCount} 文字</span>
-                <span>{imageCount} 图片</span>
-                <span>{videoCount} 视频</span>
+              <div className="flex flex-col items-end gap-2">
+                <DateDisplay dateFormat={style.dateFormat} primaryColor={style.primaryColor} />
+                <div className="flex gap-3 text-xs text-white/30">
+                  <span>{textCount} 文字</span>
+                  <span>{imageCount} 图片</span>
+                  <span>{videoCount} 视频</span>
+                </div>
               </div>
             </div>
           </div>
@@ -169,25 +179,52 @@ export default function Home() {
           {/* Content */}
           <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
             {activeTab === 'records' && (
-              <div className="grid grid-cols-3 gap-3">
-                {items.length === 0 ? (
-                  <div className="col-span-3 flex flex-col items-center justify-center py-16 text-white/20">
-                    <svg className="w-16 h-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                    </svg>
-                    <p className="text-sm">暂无记录</p>
-                    <p className="text-xs mt-1">点击「添加记录」开始记录你的竞赛历程</p>
-                  </div>
-                ) : (
-                  items.map((item) => (
-                    <MediaCard
-                      key={item.id}
-                      item={item}
-                      onDelete={handleDeleteItem}
-                      styleConfig={style}
-                    />
-                  ))
-                )}
+              <div>
+                {/* Date filter bar */}
+                <div className="flex items-center gap-2 mb-3">
+                  <input
+                    type="date"
+                    value={filterDate}
+                    onChange={(e) => setFilterDate(e.target.value)}
+                    className="bg-white/5 border border-white/10 text-white/70 text-xs px-3 py-1.5 outline-none focus:border-white/25 transition-colors"
+                    style={{ borderRadius: style.borderRadius - 6, colorScheme: 'dark' }}
+                  />
+                  {filterDate && (
+                    <button
+                      onClick={() => setFilterDate('')}
+                      className="text-xs text-white/30 hover:text-white/60 transition-colors px-2 py-1.5"
+                      style={{ borderRadius: style.borderRadius - 6, background: 'rgba(255,255,255,0.05)' }}
+                    >
+                      清除筛选
+                    </button>
+                  )}
+                  {filterDate && (
+                    <span className="text-xs text-white/25 ml-auto">
+                      {filteredItems.length} 条记录
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  {filteredItems.length === 0 ? (
+                    <div className="col-span-3 flex flex-col items-center justify-center py-16 text-white/20">
+                      <svg className="w-16 h-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                      </svg>
+                      <p className="text-sm">{filterDate ? '当天暂无记录' : '暂无记录'}</p>
+                      <p className="text-xs mt-1">{filterDate ? '试试选择其他日期或清除筛选' : '点击「添加记录」开始记录你的竞赛历程'}</p>
+                    </div>
+                  ) : (
+                    filteredItems.map((item) => (
+                      <MediaCard
+                        key={item.id}
+                        item={item}
+                        onDelete={handleDeleteItem}
+                        styleConfig={style}
+                      />
+                    ))
+                  )}
+                </div>
               </div>
             )}
 

@@ -15,6 +15,7 @@ export interface StyleConfig {
   panelBlur: number;
   fontSize: number;
   borderRadius: number;
+  dateFormat: 'gregorian' | 'lunar';
 }
 
 export const DEFAULT_STYLE: StyleConfig = {
@@ -26,4 +27,5 @@ export const DEFAULT_STYLE: StyleConfig = {
   panelBlur: 20,
   fontSize: 14,
   borderRadius: 16,
+  dateFormat: 'gregorian',
 };

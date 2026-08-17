@@ -149,6 +149,31 @@ export default function StyleCustomizer({ config, onChange }: StyleCustomizerPro
           />
         </div>
       </div>
+
+      {/* Date Format */}
+      <div>
+        <label className="text-sm font-medium text-white/60 mb-3 block">日期格式</label>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { value: 'gregorian' as const, label: '公历', desc: '2026年08月17日' },
+            { value: 'lunar' as const, label: '农历', desc: '丙午年六月廿四' },
+          ].map(({ value, label, desc }) => (
+            <button
+              key={value}
+              onClick={() => update({ dateFormat: value })}
+              className="px-4 py-3 border transition-all duration-200 text-left"
+              style={{
+                borderRadius: config.borderRadius - 6,
+                borderColor: config.dateFormat === value ? config.primaryColor : 'rgba(255,255,255,0.1)',
+                background: config.dateFormat === value ? `${config.primaryColor}15` : 'rgba(255,255,255,0.03)',
+              }}
+            >
+              <span className="text-sm text-white/80 block">{label}</span>
+              <span className="text-xs text-white/30 block mt-0.5">{desc}</span>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
