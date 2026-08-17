@@ -19,6 +19,8 @@ export default function Home() {
   const [filterDate, setFilterDate] = useState<string>('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [lunarDate, setLunarDate] = useState<string>('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const styleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 计算农历日期
@@ -113,9 +115,11 @@ export default function Home() {
   const imageCount = items.filter((i) => i.type === 'image').length;
   const videoCount = items.filter((i) => i.type === 'video').length;
 
-  const filteredItems = filterDate
-    ? items.filter((item) => getDateKey(item.createdAt) === filterDate)
-    : items;
+  const filteredItems = items.filter((item) => {
+    const matchDate = !filterDate || getDateKey(item.createdAt) === filterDate;
+    const matchSearch = !searchQuery || item.title.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchDate && matchSearch;
+  });
 
   return (
     <>
@@ -221,6 +225,27 @@ export default function Home() {
               </>
             )}
             <div className="ml-auto flex items-center gap-1">
+              {searchOpen && (
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="搜索标题..."
+                  className="bg-white/5 border border-white/10 text-white/80 text-xs px-3 py-1.5 outline-none focus:border-white/25 transition-colors w-36"
+                  style={{ borderRadius: style.borderRadius - 6, colorScheme: 'dark' }}
+                  autoFocus
+                />
+              )}
+              <button
+                onClick={() => { setSearchOpen(!searchOpen); if (searchOpen) setSearchQuery(''); }}
+                className={`p-1.5 transition-colors ${searchOpen ? 'bg-white/10 text-white/80' : 'text-white/40 hover:text-white/80'}`}
+                style={{ borderRadius: style.borderRadius - 8 }}
+                title="搜索记录"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
               <button
                 onClick={() => setActiveTab(activeTab === 'add' ? 'records' : 'add')}
                 className={`p-1.5 transition-colors ${activeTab === 'add' ? 'bg-white/10 text-white/80' : 'text-white/40 hover:text-white/80'}`}
