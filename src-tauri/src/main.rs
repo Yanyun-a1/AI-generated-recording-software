@@ -219,6 +219,22 @@ fn update_record(
     write_store(&app, &data)
 }
 
+/// 读取 uploads/ 内的文件字节（导出用），带路径穿越防护
+#[tauri::command]
+fn read_file_bytes(app: AppHandle, path: String) -> Result<Vec<u8>, String> {
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("无法获取应用数据目录: {e}"))?;
+    let clean = path.trim_start_matches('/');
+    let full = dir.join(clean);
+    let uploads = dir.join("uploads");
+    if !full.starts_with(&uploads) {
+        return Err("非法路径".into());
+    }
+    fs::read(&full).map_err(|e| format!("读取文件失败: {e}"))
+}
+
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
@@ -227,7 +243,8 @@ fn main() {
             save_text,
             save_file,
             delete_record,
-            update_record
+            update_record,
+            read_file_bytes
         ])
         .run(tauri::generate_context!())
         .expect("启动应用失败");

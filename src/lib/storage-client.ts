@@ -132,6 +132,18 @@ export async function updateRecord(id: string, title: string, content: string): 
   if (!res.ok) throw new Error('更新失败');
 }
 
+/** 读取 uploads/ 内文件的字节（导出用）：content 形如 uploads/images/x.png */
+export async function readFileBytes(content: string): Promise<Uint8Array> {
+  if (isTauri()) {
+    const { invoke } = await import('@tauri-apps/api/core');
+    const bytes = await invoke<number[]>('read_file_bytes', { path: content });
+    return Uint8Array.from(bytes);
+  }
+  const res = await fetch(`/${content}`);
+  if (!res.ok) throw new Error('读取文件失败');
+  return new Uint8Array(await res.arrayBuffer());
+}
+
 /**
  * 将记录内容解析为可显示的 URL
  * - 桌面版：content = uploads/xxx → convertFileSrc(应用数据目录 + content)（asset protocol）

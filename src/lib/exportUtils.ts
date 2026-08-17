@@ -2,6 +2,37 @@ import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import type { MediaItem } from './types';
+import { readFileBytes } from './storage-client';
+
+/** 富文本 HTML 转纯文本（导出 Word 用） */
+function htmlToPlainText(html: string): string {
+  if (typeof document === 'undefined') return html;
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return div.textContent || '';
+}
+
+/** 根据文件路径推断 MIME */
+function getMimeFromPath(path: string): string {
+  const ext = path.split('.').pop()?.toLowerCase() || '';
+  const map: Record<string, string> = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    gif: 'image/gif',
+    webp: 'image/webp',
+    mp4: 'video/mp4',
+    webm: 'video/webm',
+    mov: 'video/quicktime',
+  };
+  return map[ext] || 'application/octet-stream';
+}
+
+/** 读取媒体文件为 Blob（桌面版走 Rust 读盘，网页版走 HTTP） */
+async function getMediaBlob(item: MediaItem): Promise<Blob> {
+  const bytes = await readFileBytes(item.content);
+  return new Blob([new Uint8Array(bytes)], { type: getMimeFromPath(item.content) });
+}
 
 function getWeekNumber(date: Date): number {
   const start = new Date(date.getFullYear(), 0, 1);
@@ -82,7 +113,7 @@ async function createWordDocument(item: MediaItem): Promise<Blob> {
           ],
           spacing: { after: 400 },
         }),
-        ...item.content.split('\n').map(line =>
+        ...htmlToPlainText(item.content).split('\n').map(line =>
           new Paragraph({
             children: [new TextRun({ text: line, size: 24 })],
             spacing: { after: 100 },
@@ -106,18 +137,13 @@ function base64ToBlob(base64: string): Blob {
   }
   return new Blob([u8arr], { type: mime });
 }
-
 function getFileExtension(item: MediaItem): string {
   if (item.type === 'text') return '.docx';
-  if (item.type === 'image') {
-    const mime = item.content.split(',')[0].match(/:(.*?);/)?.[1] || 'image/png';
-    return '.' + mime.split('/')[1].replace('jpeg', 'jpg');
-  }
-  if (item.type === 'video') {
-    const mime = item.content.split(',')[0].match(/:(.*?);/)?.[1] || 'video/mp4';
-    return '.' + mime.split('/')[1];
-  }
-  return '.txt';
+  // content 形如 uploads/images/xxx.png，从路径取扩展名
+  const name = item.content.split('/').pop() || '';
+  const dot = name.lastIndexOf('.');
+  if (dot > 0) return name.slice(dot);
+  return item.type === 'image' ? '.png' : '.mp4';
 }
 
 export async function exportRecords(
@@ -149,7 +175,7 @@ export async function exportRecords(
       const wordBlob = await createWordDocument(item);
       zip.file(filePath, wordBlob);
     } else {
-      const blob = base64ToBlob(item.content);
+      const blob = await getMediaBlob(item);
       zip.file(filePath, blob);
     }
   }
