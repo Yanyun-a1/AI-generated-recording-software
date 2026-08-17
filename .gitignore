@@ -90,6 +90,9 @@ logs/
 # Preview files
 .preview
 
+# 本地上传存储（运行时数据，不提交）
+/uploads/
+
 # CodeGraph index
 .codegraph
 # Dependencies

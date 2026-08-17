@@ -15,42 +15,54 @@ export default function MediaImporter({ onAdd, styleConfig }: MediaImporterProps
   const [activeTab, setActiveTab] = useState<'text' | 'image' | 'video'>('text');
   const [textContent, setTextContent] = useState('');
   const [title, setTitle] = useState('');
+  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleAddText = () => {
-    if (!textContent.trim()) return;
-    onAdd({
-      id: crypto.randomUUID(),
-      type: 'text',
-      content: textContent,
-      title: title || '文字记录',
-      createdAt: Date.now(),
-    });
-    setTextContent('');
-    setTitle('');
+  const handleAddText = async () => {
+    if (!textContent.trim() || uploading) return;
+    setUploading(true);
+    try {
+      const res = await fetch('/api/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'text', title, content: textContent }),
+      });
+      if (!res.ok) throw new Error('save failed');
+      const item: MediaItem = await res.json();
+      onAdd(item);
+      setTextContent('');
+      setTitle('');
+    } catch {
+      alert('文字保存失败，请重试');
+    } finally {
+      setUploading(false);
+    }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || uploading) return;
 
     const isImage = file.type.startsWith('image/');
     const isVideo = file.type.startsWith('video/');
     if (!isImage && !isVideo) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      onAdd({
-        id: crypto.randomUUID(),
-        type: isImage ? 'image' : 'video',
-        content: reader.result as string,
-        title: title || file.name,
-        createdAt: Date.now(),
-      });
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('title', title);
+      const res = await fetch('/api/upload', { method: 'POST', body: form });
+      if (!res.ok) throw new Error('upload failed');
+      const item: MediaItem = await res.json();
+      onAdd(item);
       setTitle('');
-    };
-    reader.readAsDataURL(file);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch {
+      alert('上传失败，请重试');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const tabs = [
@@ -100,14 +112,14 @@ export default function MediaImporter({ onAdd, styleConfig }: MediaImporterProps
           />
           <button
             onClick={handleAddText}
-            disabled={!textContent.trim()}
+            disabled={!textContent.trim() || uploading}
             className="w-full py-2.5 font-medium text-white transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
             style={{
               borderRadius: styleConfig.borderRadius - 4,
               background: `linear-gradient(135deg, ${styleConfig.primaryColor}, ${styleConfig.primaryColor}99)`,
             }}
           >
-            添加文字记录
+            {uploading ? '保存中...' : '添加文字记录'}
           </button>
         </div>
       )}
@@ -115,6 +127,7 @@ export default function MediaImporter({ onAdd, styleConfig }: MediaImporterProps
       {(activeTab === 'image' || activeTab === 'video') && (
         <div className="space-y-3">
           <label
+            htmlFor="media-file-input"
             className="flex flex-col items-center justify-center gap-3 py-10 border border-dashed border-white/20 cursor-pointer hover:border-white/40 transition-colors"
             style={{ borderRadius: styleConfig.borderRadius - 4 }}
           >
@@ -126,13 +139,14 @@ export default function MediaImporter({ onAdd, styleConfig }: MediaImporterProps
               )}
             </svg>
             <span className="text-sm text-white/40">
-              点击选择{activeTab === 'image' ? '图片' : '视频'}文件
+              {uploading ? '上传中...' : `点击选择${activeTab === 'image' ? '图片' : '视频'}文件`}
             </span>
             <span className="text-xs text-white/20">
               {activeTab === 'image' ? '支持 JPG, PNG, GIF, WebP' : '支持 MP4, WebM, MOV'}
             </span>
           </label>
           <input
+            id="media-file-input"
             ref={fileInputRef}
             type="file"
             accept={activeTab === 'image' ? 'image/*' : 'video/*'}

@@ -1,11 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import NeonBackground from '@/components/NeonBackground';
 import MediaImporter from '@/components/MediaImporter';
 import MediaCard from '@/components/MediaCard';
 import StyleCustomizer from '@/components/StyleCustomizer';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { DEFAULT_STYLE } from '@/lib/types';
 import type { MediaItem, StyleConfig } from '@/lib/types';
 
@@ -13,16 +12,47 @@ type Tab = 'records' | 'add' | 'style';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('records');
-  const [items, setItems] = useLocalStorage<MediaItem[]>('bdc-records', []);
-  const [style, setStyle] = useLocalStorage<StyleConfig>('bdc-style', DEFAULT_STYLE);
+  const [items, setItems] = useState<MediaItem[]>([]);
+  const [style, setStyle] = useState<StyleConfig>(DEFAULT_STYLE);
+  const styleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 从本地存储层加载记录与样式
+  useEffect(() => {
+    fetch('/api/records')
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data.items)) setItems(data.items);
+        if (data.style) setStyle(data.style);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleAddItem = (item: MediaItem) => {
     setItems((prev) => [item, ...prev]);
     setActiveTab('records');
   };
 
-  const handleDeleteItem = (id: string) => {
-    setItems((prev) => prev.filter((i) => i.id !== id));
+  const handleDeleteItem = async (id: string) => {
+    try {
+      const res = await fetch(`/api/records?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) return;
+      setItems((prev) => prev.filter((i) => i.id !== id));
+    } catch {
+      // ignore
+    }
+  };
+
+  // 样式变更本地即时生效，防抖 400ms 后落盘
+  const handleStyleChange = (next: StyleConfig) => {
+    setStyle(next);
+    if (styleTimer.current) clearTimeout(styleTimer.current);
+    styleTimer.current = setTimeout(() => {
+      fetch('/api/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ style: next }),
+      }).catch(() => {});
+    }, 400);
   };
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
@@ -166,7 +196,7 @@ export default function Home() {
             )}
 
             {activeTab === 'style' && (
-              <StyleCustomizer config={style} onChange={setStyle} />
+              <StyleCustomizer config={style} onChange={handleStyleChange} />
             )}
           </div>
 
