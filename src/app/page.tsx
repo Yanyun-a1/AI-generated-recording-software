@@ -94,7 +94,8 @@ export default function Home() {
                 <h1
                   className="text-xl font-bold tracking-wide"
                   style={{
-                    color: '#ffffff',
+                    color: style.primaryColor,
+                    textShadow: '0 1px 3px rgba(0,0,0,0.9)',
                   }}
                 >
                   大数据竞赛程序记录
