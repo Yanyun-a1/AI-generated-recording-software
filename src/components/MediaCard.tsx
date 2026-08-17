@@ -3,14 +3,7 @@
 import { useState, useEffect } from 'react';
 import type { MediaItem } from '@/lib/types';
 import { resolveMediaUrl } from '@/lib/storage-client';
-
-/** 富文本 HTML 转纯文本（用于编辑框显示） */
-function htmlToPlainText(html: string): string {
-  if (typeof document === 'undefined') return html;
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  return div.textContent || '';
-}
+import RichTextEditor from '@/components/RichTextEditor';
 
 interface MediaCardProps {
   item: MediaItem;
@@ -28,7 +21,7 @@ export default function MediaCard({ item, onDelete, onEdit, styleConfig }: Media
   const [editing, setEditing] = useState(false);
   const [mediaExpanded, setMediaExpanded] = useState(false);
   const [editTitle, setEditTitle] = useState(item.title);
-  const [editContent, setEditContent] = useState(htmlToPlainText(item.content));
+  const [editContent, setEditContent] = useState(item.content);
   const [mediaSrc, setMediaSrc] = useState(item.content);
 
   // 图片/视频 URL 解析：桌面版转 asset 协议地址，网页版转 /uploads 路径
@@ -56,7 +49,7 @@ export default function MediaCard({ item, onDelete, onEdit, styleConfig }: Media
 
   const handleCancel = () => {
     setEditTitle(item.title);
-    setEditContent(htmlToPlainText(item.content));
+    setEditContent(item.content);
     setEditing(false);
   };
 
@@ -129,11 +122,12 @@ export default function MediaCard({ item, onDelete, onEdit, styleConfig }: Media
         <div className="px-2.5 py-2 flex-1 min-h-0">
           {item.type === 'text' && (
             editing ? (
-              <textarea
+              <RichTextEditor
                 value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                className="w-full bg-white/10 border border-white/20 text-white/80 text-xs px-2 py-1.5 outline-none focus:border-white/40 resize-none"
-                style={{ borderRadius: 3, minHeight: '80px' }}
+                onChange={setEditContent}
+                placeholder="输入文字内容..."
+                borderRadius={styleConfig.borderRadius}
+                primaryColor={styleConfig.primaryColor}
               />
             ) : (
               <div className="text-white/60 text-xs leading-relaxed overflow-hidden" style={{ maxHeight: expanded ? '300px' : '80px' }}>
