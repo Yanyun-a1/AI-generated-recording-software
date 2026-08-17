@@ -82,7 +82,10 @@ export default function Home() {
           {/* Header */}
           <div
             className="px-6 py-5 border-b border-white/10"
-            style={{ borderRadius: `${style.borderRadius}px ${style.borderRadius}px 0 0` }}
+            style={{
+              borderRadius: `${style.borderRadius}px ${style.borderRadius}px 0 0`,
+              background: 'rgba(10, 5, 20, 0.6)',
+            }}
           >
             <div className="flex items-center justify-between">
               <div>
