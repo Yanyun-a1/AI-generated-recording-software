@@ -6,6 +6,7 @@ import MediaImporter from '@/components/MediaImporter';
 import MediaCard from '@/components/MediaCard';
 import StyleCustomizer from '@/components/StyleCustomizer';
 import DateDisplay from '@/components/DateDisplay';
+import DateFilter from '@/components/DateFilter';
 import { DEFAULT_STYLE } from '@/lib/types';
 import type { MediaItem, StyleConfig } from '@/lib/types';
 import { getDateKey, isToday, formatLunar } from '@/lib/dateUtils';
@@ -17,9 +18,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('records');
   const [items, setItems] = useState<MediaItem[]>([]);
   const [style, setStyle] = useState<StyleConfig>(DEFAULT_STYLE);
-  const [filterYear, setFilterYear] = useState('');
-  const [filterMonth, setFilterMonth] = useState('');
-  const [filterDay, setFilterDay] = useState('');
+  const [filterDate, setFilterDate] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [lunarDate, setLunarDate] = useState<string>('');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -119,16 +118,10 @@ export default function Home() {
   const imageCount = items.filter((i) => i.type === 'image').length;
   const videoCount = items.filter((i) => i.type === 'video').length;
 
-  const filterActive = !!(filterYear && filterMonth && filterDay);
-  const nowYear = new Date().getFullYear();
-  const minYear = items.length
-    ? Math.min(...items.map((i) => new Date(i.createdAt).getFullYear()))
-    : nowYear;
-  const yearOptions: number[] = [];
-  for (let y = nowYear; y >= minYear; y--) yearOptions.push(y);
+  const filterActive = !!filterDate;
 
   const filteredItems = items.filter((item) => {
-    const matchDate = !filterActive || getDateKey(item.createdAt) === `${filterYear}-${filterMonth}-${filterDay}`;
+    const matchDate = !filterActive || getDateKey(item.createdAt) === filterDate;
     const matchSearch = !searchQuery || item.title.toLowerCase().includes(searchQuery.toLowerCase());
     return matchDate && matchSearch;
   });
@@ -191,42 +184,14 @@ export default function Home() {
           <div className="px-6 pt-4 flex items-center gap-2">
             {activeTab === 'records' && (
               <>
-                <select
-                  value={filterYear}
-                  onChange={(e) => setFilterYear(e.target.value)}
-                  className="bg-white/5 border border-white/10 text-white/70 text-xs px-2 py-1.5 outline-none focus:border-white/25 transition-colors"
-                  style={{ borderRadius: style.borderRadius - 6 }}
-                >
-                  <option value="" className="text-black bg-white">年</option>
-                  {yearOptions.map((y) => (
-                    <option key={y} value={y} className="text-black bg-white">{y}年</option>
-                  ))}
-                </select>
-                <select
-                  value={filterMonth}
-                  onChange={(e) => setFilterMonth(e.target.value)}
-                  className="bg-white/5 border border-white/10 text-white/70 text-xs px-2 py-1.5 outline-none focus:border-white/25 transition-colors"
-                  style={{ borderRadius: style.borderRadius - 6 }}
-                >
-                  <option value="" className="text-black bg-white">月</option>
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                    <option key={m} value={String(m).padStart(2, '0')} className="text-black bg-white">{m}月</option>
-                  ))}
-                </select>
-                <select
-                  value={filterDay}
-                  onChange={(e) => setFilterDay(e.target.value)}
-                  className="bg-white/5 border border-white/10 text-white/70 text-xs px-2 py-1.5 outline-none focus:border-white/25 transition-colors"
-                  style={{ borderRadius: style.borderRadius - 6 }}
-                >
-                  <option value="" className="text-black bg-white">日</option>
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                    <option key={d} value={String(d).padStart(2, '0')} className="text-black bg-white">{d}日</option>
-                  ))}
-                </select>
+                <DateFilter
+                  value={filterDate}
+                  onChange={setFilterDate}
+                  borderRadius={style.borderRadius}
+                />
                 {filterActive && (
                   <button
-                    onClick={() => { setFilterYear(''); setFilterMonth(''); setFilterDay(''); }}
+                    onClick={() => setFilterDate('')}
                     className="text-xs text-white/30 hover:text-white/60 transition-colors px-2 py-1.5"
                     style={{ borderRadius: style.borderRadius - 6, background: 'rgba(255,255,255,0.05)' }}
                   >
