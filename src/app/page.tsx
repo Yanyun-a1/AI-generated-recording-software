@@ -17,6 +17,7 @@ export default function Home() {
   const [items, setItems] = useState<MediaItem[]>([]);
   const [style, setStyle] = useState<StyleConfig>(DEFAULT_STYLE);
   const [filterDate, setFilterDate] = useState<string>('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [lunarDate, setLunarDate] = useState<string>('');
   const styleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -200,7 +201,7 @@ export default function Home() {
           <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
             {activeTab === 'records' && (
               <div>
-                {/* Date filter bar */}
+                {/* Date filter bar + view toggle */}
                 <div className="flex items-center gap-2 mb-3">
                   <input
                     type="date"
@@ -219,12 +220,35 @@ export default function Home() {
                     </button>
                   )}
                   {filterDate && (
-                    <span className="text-xs text-white/25 ml-auto">
+                    <span className="text-xs text-white/25">
                       {filteredItems.length} 条记录
                     </span>
                   )}
+                  <div className="ml-auto flex items-center gap-1 bg-white/5 border border-white/10 p-0.5" style={{ borderRadius: style.borderRadius - 6 }}>
+                    <button
+                      onClick={() => setViewMode('grid')}
+                      className={`p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-white/10 text-white/80' : 'text-white/30 hover:text-white/50'}`}
+                      style={{ borderRadius: style.borderRadius - 8 }}
+                      title="网格视图"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => setViewMode('list')}
+                      className={`p-1.5 transition-colors ${viewMode === 'list' ? 'bg-white/10 text-white/80' : 'text-white/30 hover:text-white/50'}`}
+                      style={{ borderRadius: style.borderRadius - 8 }}
+                      title="列表视图"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
+                {viewMode === 'grid' ? (
                 <div className="grid grid-cols-3 gap-3">
                   {filteredItems.length === 0 ? (
                     <div className="col-span-3 flex flex-col items-center justify-center py-16 text-white/20">
@@ -246,6 +270,66 @@ export default function Home() {
                     ))
                   )}
                 </div>
+                ) : (
+                <div className="flex flex-col gap-1">
+                  {filteredItems.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-white/20">
+                      <svg className="w-16 h-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                      </svg>
+                      <p className="text-sm">{filterDate ? '当天暂无记录' : '暂无记录'}</p>
+                      <p className="text-xs mt-1">{filterDate ? '试试选择其他日期或清除筛选' : '点击「添加记录」开始记录你的竞赛历程'}</p>
+                    </div>
+                  ) : (
+                    filteredItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="group flex items-center gap-3 px-3 py-2.5 border border-white/5 hover:border-white/15 transition-colors cursor-default"
+                        style={{
+                          background: 'rgba(255,255,255,0.02)',
+                          borderRadius: style.borderRadius - 6,
+                        }}
+                      >
+                        {/* Type indicator */}
+                        <div
+                          className="w-1.5 h-1.5 rounded-full shrink-0"
+                          style={{
+                            background:
+                              item.type === 'text' ? style.primaryColor :
+                              item.type === 'image' ? style.secondaryColor :
+                              style.accentColor,
+                          }}
+                        />
+                        {/* Title */}
+                        <span
+                          className="flex-1 text-white/70 group-hover:text-white/90 transition-colors truncate"
+                          style={{ fontSize: style.fontSize - 1 }}
+                        >
+                          {item.title}
+                        </span>
+                        {/* Type badge */}
+                        <span className="text-[10px] text-white/20 shrink-0">
+                          {item.type === 'text' ? '文字' : item.type === 'image' ? '图片' : '视频'}
+                        </span>
+                        {/* Date */}
+                        <span className="text-[10px] text-white/15 shrink-0">
+                          {new Date(item.createdAt).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}
+                        </span>
+                        {/* Delete button */}
+                        <button
+                          onClick={() => handleDeleteItem(item.id)}
+                          className="opacity-0 group-hover:opacity-100 text-white/20 hover:text-red-400 transition-all p-1 shrink-0"
+                          title="删除"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+                )}
               </div>
             )}
 
