@@ -17,7 +17,9 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('records');
   const [items, setItems] = useState<MediaItem[]>([]);
   const [style, setStyle] = useState<StyleConfig>(DEFAULT_STYLE);
-  const [filterDate, setFilterDate] = useState<string>('');
+  const [filterYear, setFilterYear] = useState('');
+  const [filterMonth, setFilterMonth] = useState('');
+  const [filterDay, setFilterDay] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [lunarDate, setLunarDate] = useState<string>('');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -117,8 +119,16 @@ export default function Home() {
   const imageCount = items.filter((i) => i.type === 'image').length;
   const videoCount = items.filter((i) => i.type === 'video').length;
 
+  const filterActive = !!(filterYear && filterMonth && filterDay);
+  const nowYear = new Date().getFullYear();
+  const minYear = items.length
+    ? Math.min(...items.map((i) => new Date(i.createdAt).getFullYear()))
+    : nowYear;
+  const yearOptions: number[] = [];
+  for (let y = nowYear; y >= minYear; y--) yearOptions.push(y);
+
   const filteredItems = items.filter((item) => {
-    const matchDate = !filterDate || getDateKey(item.createdAt) === filterDate;
+    const matchDate = !filterActive || getDateKey(item.createdAt) === `${filterYear}-${filterMonth}-${filterDay}`;
     const matchSearch = !searchQuery || item.title.toLowerCase().includes(searchQuery.toLowerCase());
     return matchDate && matchSearch;
   });
@@ -181,23 +191,49 @@ export default function Home() {
           <div className="px-6 pt-4 flex items-center gap-2">
             {activeTab === 'records' && (
               <>
-                <input
-                  type="date"
-                  value={filterDate}
-                  onChange={(e) => setFilterDate(e.target.value)}
-                  className="bg-white/5 border border-white/10 text-white/70 text-xs px-3 py-1.5 outline-none focus:border-white/25 transition-colors"
-                  style={{ borderRadius: style.borderRadius - 6, colorScheme: 'dark' }}
-                />
-                {filterDate && (
+                <select
+                  value={filterYear}
+                  onChange={(e) => setFilterYear(e.target.value)}
+                  className="bg-white/5 border border-white/10 text-white/70 text-xs px-2 py-1.5 outline-none focus:border-white/25 transition-colors"
+                  style={{ borderRadius: style.borderRadius - 6 }}
+                >
+                  <option value="" className="text-black bg-white">年</option>
+                  {yearOptions.map((y) => (
+                    <option key={y} value={y} className="text-black bg-white">{y}年</option>
+                  ))}
+                </select>
+                <select
+                  value={filterMonth}
+                  onChange={(e) => setFilterMonth(e.target.value)}
+                  className="bg-white/5 border border-white/10 text-white/70 text-xs px-2 py-1.5 outline-none focus:border-white/25 transition-colors"
+                  style={{ borderRadius: style.borderRadius - 6 }}
+                >
+                  <option value="" className="text-black bg-white">月</option>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                    <option key={m} value={String(m).padStart(2, '0')} className="text-black bg-white">{m}月</option>
+                  ))}
+                </select>
+                <select
+                  value={filterDay}
+                  onChange={(e) => setFilterDay(e.target.value)}
+                  className="bg-white/5 border border-white/10 text-white/70 text-xs px-2 py-1.5 outline-none focus:border-white/25 transition-colors"
+                  style={{ borderRadius: style.borderRadius - 6 }}
+                >
+                  <option value="" className="text-black bg-white">日</option>
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                    <option key={d} value={String(d).padStart(2, '0')} className="text-black bg-white">{d}日</option>
+                  ))}
+                </select>
+                {filterActive && (
                   <button
-                    onClick={() => setFilterDate('')}
+                    onClick={() => { setFilterYear(''); setFilterMonth(''); setFilterDay(''); }}
                     className="text-xs text-white/30 hover:text-white/60 transition-colors px-2 py-1.5"
                     style={{ borderRadius: style.borderRadius - 6, background: 'rgba(255,255,255,0.05)' }}
                   >
                     清除筛选
                   </button>
                 )}
-                {filterDate && (
+                {filterActive && (
                   <span className="text-xs text-white/25">
                     {filteredItems.length} 条记录
                   </span>
@@ -307,8 +343,8 @@ export default function Home() {
                       <svg className="w-16 h-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                       </svg>
-                      <p className="text-sm">{filterDate ? '当天暂无记录' : '暂无记录'}</p>
-                      <p className="text-xs mt-1">{filterDate ? '试试选择其他日期或清除筛选' : '点击「添加记录」开始记录你的竞赛历程'}</p>
+                      <p className="text-sm">{filterActive ? '当天暂无记录' : '暂无记录'}</p>
+                      <p className="text-xs mt-1">{filterActive ? '试试选择其他日期或清除筛选' : '点击「添加记录」开始记录你的竞赛历程'}</p>
                     </div>
                   ) : (
                     filteredItems.map((item) => (
@@ -329,8 +365,8 @@ export default function Home() {
                       <svg className="w-16 h-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                       </svg>
-                      <p className="text-sm">{filterDate ? '当天暂无记录' : '暂无记录'}</p>
-                      <p className="text-xs mt-1">{filterDate ? '试试选择其他日期或清除筛选' : '点击「添加记录」开始记录你的竞赛历程'}</p>
+                      <p className="text-sm">{filterActive ? '当天暂无记录' : '暂无记录'}</p>
+                      <p className="text-xs mt-1">{filterActive ? '试试选择其他日期或清除筛选' : '点击「添加记录」开始记录你的竞赛历程'}</p>
                     </div>
                   ) : (
                     filteredItems.map((item) => (
