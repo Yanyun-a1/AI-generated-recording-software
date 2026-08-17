@@ -343,8 +343,7 @@ export default function Home() {
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-3 border-t border-white/5 flex items-center justify-between text-xs text-white/20">
-            <span>高职版 · 大数据竞赛</span>
+          <div className="px-6 py-3 border-t border-white/5 flex items-center justify-center text-xs">
             <span
               className="text-base tracking-widest"
               style={{
@@ -354,7 +353,6 @@ export default function Home() {
             >
               {lunarDate}
             </span>
-            <span>数据存储于本地浏览器</span>
           </div>
         </div>
       </div>
