@@ -24,21 +24,20 @@ const FONT_FAMILIES = [
   { label: 'Courier New', value: '"Courier New", monospace' },
 ];
 
-const FONT_COLORS = [
-  '#ffffff', '#ff6b6b', '#ffa94d', '#ffd43b', '#69db7c',
-  '#4dabf7', '#9775fa', '#f783ac', '#868e96', '#20c997',
-];
-
 export default function MediaImporter({ onAdd, styleConfig }: MediaImporterProps) {
   const [activeTab, setActiveTab] = useState<'text' | 'image' | 'video'>('text');
   const [title, setTitle] = useState('');
   const [uploading, setUploading] = useState(false);
   const [showFontList, setShowFontList] = useState(false);
-  const [showColorList, setShowColorList] = useState(false);
-  const [currentFont, setCurrentFont] = useState('inherit');
+  const [showCustomFontPanel, setShowCustomFontPanel] = useState(false);
+  const [customFontName, setCustomFontName] = useState('');
+  const [customFontUrl, setCustomFontUrl] = useState('');
+  const [customFonts, setCustomFonts] = useState<{ label: string; value: string }[]>([]);
   const [currentColor, setCurrentColor] = useState('#ffffff');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fontFileInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
+  const colorInputRef = useRef<HTMLInputElement>(null);
 
   const execCommand = useCallback((command: string, value?: string) => {
     document.execCommand(command, false, value);
@@ -78,14 +77,15 @@ export default function MediaImporter({ onAdd, styleConfig }: MediaImporterProps
 
     setUploading(true);
     try {
-      const form = new FormData();
-      form.append('file', file);
-      form.append('title', title);
-      const res = await fetch('/api/upload', { method: 'POST', body: form });
+      const buffer = await file.arrayBuffer();
+      const res = await fetch('/api/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream', 'X-Filename': file.name, 'X-File-Type': file.type },
+        body: buffer,
+      });
       if (!res.ok) throw new Error('upload failed');
       const item: MediaItem = await res.json();
       onAdd(item);
-      setTitle('');
     } catch {
       alert('上传失败，请重试');
     } finally {
@@ -94,6 +94,64 @@ export default function MediaImporter({ onAdd, styleConfig }: MediaImporterProps
     }
   };
 
+  const handleImportFont = async () => {
+    if (!customFontName.trim()) {
+      alert('请输入字体名称');
+      return;
+    }
+
+    // If a font file is provided, load it as a font face
+    const fontFile = fontFileInputRef.current?.files?.[0];
+    if (fontFile) {
+      try {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const fontData = e.target?.result as string;
+          const fontFace = new FontFace(customFontName, `url(${fontData})`);
+          fontFace.load().then((loadedFace) => {
+            document.fonts.add(loadedFace);
+            const fontValue = `"${customFontName}", sans-serif`;
+            setCustomFonts((prev) => [...prev, { label: customFontName, value: fontValue }]);
+            setCustomFontName('');
+            setCustomFontUrl('');
+            if (fontFileInputRef.current) fontFileInputRef.current.value = '';
+            setShowCustomFontPanel(false);
+          }).catch(() => {
+            alert('字体加载失败，请检查文件格式');
+          });
+        };
+        reader.readAsDataURL(fontFile);
+      } catch {
+        alert('字体导入失败');
+      }
+    } else if (customFontUrl.trim()) {
+      // Load from URL
+      try {
+        const fontFace = new FontFace(customFontName, `url(${customFontUrl})`);
+        fontFace.load().then((loadedFace) => {
+          document.fonts.add(loadedFace);
+          const fontValue = `"${customFontName}", sans-serif`;
+          setCustomFonts((prev) => [...prev, { label: customFontName, value: fontValue }]);
+          setCustomFontName('');
+          setCustomFontUrl('');
+          setShowCustomFontPanel(false);
+        }).catch(() => {
+          alert('字体加载失败，请检查 URL 是否有效');
+        });
+      } catch {
+        alert('字体导入失败');
+      }
+    } else {
+      // Just add as a system font name (user knows it's installed)
+      const fontValue = `"${customFontName}", sans-serif`;
+      setCustomFonts((prev) => [...prev, { label: customFontName, value: fontValue }]);
+      setCustomFontName('');
+      setCustomFontUrl('');
+      setShowCustomFontPanel(false);
+    }
+  };
+
+  const allFonts = [...FONT_FAMILIES, ...customFonts];
   const tabs = [
     { key: 'text' as const, label: '文字' },
     { key: 'image' as const, label: '图片' },
@@ -104,9 +162,9 @@ export default function MediaImporter({ onAdd, styleConfig }: MediaImporterProps
     <div className="space-y-4">
       <input
         type="text"
-        placeholder="标题（可选）"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
+        placeholder="记录标题"
         className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 px-4 py-2.5 outline-none focus:border-white/30 transition-colors"
         style={{ borderRadius: styleConfig.borderRadius - 4 }}
       />
@@ -139,7 +197,7 @@ export default function MediaImporter({ onAdd, styleConfig }: MediaImporterProps
             {/* Font Family */}
             <div className="relative">
               <button
-                onClick={() => { setShowFontList(!showFontList); setShowColorList(false); }}
+                onClick={() => { setShowFontList(!showFontList); setShowCustomFontPanel(false); }}
                 className="px-2 py-1 text-xs text-white/60 hover:text-white/90 hover:bg-white/10 transition-colors"
                 style={{ borderRadius: 4 }}
                 title="字体"
@@ -147,12 +205,12 @@ export default function MediaImporter({ onAdd, styleConfig }: MediaImporterProps
                 字体
               </button>
               {showFontList && (
-                <div className="absolute top-full left-0 mt-1 z-50 bg-[#1a1025] border border-white/15 shadow-xl min-w-[160px] py-1" style={{ borderRadius: 6 }}>
-                  {FONT_FAMILIES.map((font) => (
+                <div className="absolute top-full left-0 mt-1 z-50 bg-[#1a1025] border border-white/15 shadow-xl min-w-[180px] py-1 max-h-[280px] overflow-y-auto" style={{ borderRadius: 6 }}>
+                  {allFonts.map((font) => (
                     <button
                       key={font.value}
                       onClick={() => {
-                        setCurrentFont(font.value);
+                        setCurrentColor(currentColor); // keep current color
                         execCommand('fontName', font.value === 'inherit' ? 'inherit' : font.value.split(',')[0].replace(/"/g, ''));
                         setShowFontList(false);
                       }}
@@ -162,16 +220,24 @@ export default function MediaImporter({ onAdd, styleConfig }: MediaImporterProps
                       {font.label}
                     </button>
                   ))}
+                  <div className="border-t border-white/10 my-1" />
+                  <button
+                    onClick={() => { setShowCustomFontPanel(true); setShowFontList(false); }}
+                    className="w-full px-3 py-1.5 text-left text-xs text-white/50 hover:bg-white/10 hover:text-white/80 transition-colors flex items-center gap-1.5"
+                  >
+                    <span>+</span>
+                    <span>更多字体</span>
+                  </button>
                 </div>
               )}
             </div>
 
             <div className="w-px h-4 bg-white/10 mx-1" />
 
-            {/* Font Color */}
+            {/* Font Color - Native Color Picker */}
             <div className="relative">
               <button
-                onClick={() => { setShowColorList(!showColorList); setShowFontList(false); }}
+                onClick={() => colorInputRef.current?.click()}
                 className="px-2 py-1 text-xs hover:bg-white/10 transition-colors flex items-center gap-1"
                 style={{ borderRadius: 4 }}
                 title="字体颜色"
@@ -179,22 +245,16 @@ export default function MediaImporter({ onAdd, styleConfig }: MediaImporterProps
                 <span className="text-white/60">A</span>
                 <span className="w-3 h-3 border border-white/20" style={{ background: currentColor }} />
               </button>
-              {showColorList && (
-                <div className="absolute top-full left-0 mt-1 z-50 bg-[#1a1025] border border-white/15 shadow-xl p-2 grid grid-cols-5 gap-1.5" style={{ borderRadius: 6 }}>
-                  {FONT_COLORS.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => {
-                        setCurrentColor(color);
-                        execCommand('foreColor', color);
-                        setShowColorList(false);
-                      }}
-                      className="w-6 h-6 border border-white/20 hover:scale-110 transition-transform"
-                      style={{ background: color, borderRadius: 4 }}
-                    />
-                  ))}
-                </div>
-              )}
+              <input
+                ref={colorInputRef}
+                type="color"
+                value={currentColor}
+                onChange={(e) => {
+                  setCurrentColor(e.target.value);
+                  execCommand('foreColor', e.target.value);
+                }}
+                className="absolute opacity-0 w-0 h-0 pointer-events-none"
+              />
             </div>
 
             <div className="w-px h-4 bg-white/10 mx-1" />
@@ -220,63 +280,142 @@ export default function MediaImporter({ onAdd, styleConfig }: MediaImporterProps
             </button>
           </div>
 
+          {/* Custom Font Import Panel */}
+          {showCustomFontPanel && (
+            <div
+              className="p-3 bg-white/5 border border-white/15 space-y-3"
+              style={{ borderRadius: styleConfig.borderRadius - 4 }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-white/70 font-medium">导入字体</span>
+                <button
+                  onClick={() => setShowCustomFontPanel(false)}
+                  className="text-white/40 hover:text-white/70 text-xs"
+                >
+                  关闭
+                </button>
+              </div>
+              <input
+                type="text"
+                value={customFontName}
+                onChange={(e) => setCustomFontName(e.target.value)}
+                placeholder="字体名称（必填）"
+                className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 px-3 py-2 text-xs outline-none focus:border-white/30"
+                style={{ borderRadius: 4 }}
+              />
+              <input
+                type="text"
+                value={customFontUrl}
+                onChange={(e) => setCustomFontUrl(e.target.value)}
+                placeholder="字体文件 URL（可选）"
+                className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 px-3 py-2 text-xs outline-none focus:border-white/30"
+                style={{ borderRadius: 4 }}
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => fontFileInputRef.current?.click()}
+                  className="px-3 py-1.5 text-xs text-white/60 bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                  style={{ borderRadius: 4 }}
+                >
+                  选择字体文件
+                </button>
+                <input
+                  ref={fontFileInputRef}
+                  type="file"
+                  accept=".ttf,.otf,.woff,.woff2"
+                  className="hidden"
+                  onChange={() => {}}
+                />
+                <span className="text-xs text-white/30">或输入 URL</span>
+              </div>
+              <button
+                onClick={handleImportFont}
+                className="w-full py-2 text-xs font-medium transition-colors"
+                style={{
+                  borderRadius: 4,
+                  background: styleConfig.primaryColor + '40',
+                  color: styleConfig.primaryColor,
+                  border: `1px solid ${styleConfig.primaryColor}50`,
+                }}
+              >
+                导入字体
+              </button>
+              <p className="text-[10px] text-white/30 leading-relaxed">
+                支持 TTF、OTF、WOFF、WOFF2 格式。也可输入字体名称直接使用系统已安装的字体。
+              </p>
+            </div>
+          )}
+
           {/* Rich Text Editor */}
           <div
             ref={editorRef}
             contentEditable
             suppressContentEditableWarning
+            className="w-full bg-white/5 border border-white/10 text-white px-4 py-3 outline-none focus:border-white/30 transition-colors min-h-[120px] max-h-[200px] overflow-y-auto custom-scrollbar whitespace-pre-wrap break-words empty:before:content-[attr(data-placeholder)] empty:before:text-white/30"
+            style={{ borderRadius: styleConfig.borderRadius - 4, fontSize: 14, lineHeight: 1.6 }}
             data-placeholder="输入文字内容..."
-            className="w-full bg-white/5 border border-white/10 text-white px-4 py-3 outline-none focus:border-white/30 transition-colors overflow-y-auto min-h-[150px] max-h-[300px]"
-            style={{
-              borderRadius: styleConfig.borderRadius - 4,
-              fontFamily: currentFont,
-            }}
-            onFocus={() => { setShowFontList(false); setShowColorList(false); }}
+            spellCheck={false}
           />
 
           <button
             onClick={handleAddText}
-            disabled={uploading}
-            className="w-full py-2.5 font-medium text-white transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
+            disabled={!editorRef.current?.innerText.trim() || uploading}
+            className="w-full py-2.5 text-sm font-medium transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
             style={{
               borderRadius: styleConfig.borderRadius - 4,
-              background: `linear-gradient(135deg, ${styleConfig.primaryColor}, ${styleConfig.primaryColor}99)`,
+              background: uploading ? 'rgba(255,255,255,0.1)' : styleConfig.primaryColor,
+              color: '#fff',
+              boxShadow: uploading ? 'none' : `0 0 20px ${styleConfig.primaryColor}40`,
             }}
           >
-            {uploading ? '保存中...' : '添加文字记录'}
+            {uploading ? '保存中...' : '保存文字记录'}
           </button>
         </div>
       )}
 
       {(activeTab === 'image' || activeTab === 'video') && (
-        <div className="space-y-3">
-          <label
-            htmlFor="media-file-input"
-            className="flex flex-col items-center justify-center gap-3 py-10 border border-dashed border-white/20 cursor-pointer hover:border-white/40 transition-colors"
-            style={{ borderRadius: styleConfig.borderRadius - 4 }}
+        <div
+          onClick={() => fileInputRef.current?.click()}
+          className="w-full border-2 border-dashed border-white/15 hover:border-white/30 transition-all duration-200 flex flex-col items-center justify-center py-12 cursor-pointer group"
+          style={{ borderRadius: styleConfig.borderRadius - 4 }}
+        >
+          <div
+            className="w-12 h-12 flex items-center justify-center mb-3 transition-transform group-hover:scale-110"
+            style={{ color: styleConfig.primaryColor }}
           >
-            <svg className="w-10 h-10 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              {activeTab === 'image' ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              )}
-            </svg>
-            <span className="text-sm text-white/40">
-              {uploading ? '上传中...' : `点击选择${activeTab === 'image' ? '图片' : '视频'}文件`}
-            </span>
-            <span className="text-xs text-white/20">
-              {activeTab === 'image' ? '支持 JPG, PNG, GIF, WebP' : '支持 MP4, WebM, MOV'}
-            </span>
-          </label>
+            {activeTab === 'image' ? (
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+            ) : (
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="23 7 16 12 23 17 23 7" />
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+              </svg>
+            )}
+          </div>
+          <p className="text-sm text-white/50 group-hover:text-white/70 transition-colors">
+            点击选择{activeTab === 'image' ? '图片' : '视频'}文件
+          </p>
+          <p className="text-xs text-white/30 mt-1">
+            {activeTab === 'image' ? 'JPG, PNG, GIF, WebP' : 'MP4, WebM, MOV'}
+          </p>
           <input
-            id="media-file-input"
             ref={fileInputRef}
             type="file"
             accept={activeTab === 'image' ? 'image/*' : 'video/*'}
             onChange={handleFileSelect}
             className="hidden"
           />
+        </div>
+      )}
+
+      {uploading && activeTab !== 'text' && (
+        <div className="flex items-center gap-2 text-sm" style={{ color: styleConfig.primaryColor }}>
+          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          上传中...
         </div>
       )}
     </div>
