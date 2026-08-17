@@ -2,7 +2,7 @@ import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import type { MediaItem } from './types';
-import { readFileBytes } from './storage-client';
+import { readFileBytes, isTauri } from './storage-client';
 
 /** 富文本 HTML 转纯文本（导出 Word 用） */
 function htmlToPlainText(html: string): string {
@@ -184,5 +184,21 @@ export async function exportRecords(
   
   const levelNames = { daily: '每日', weekly: '每周', monthly: '每月', yearly: '每年' };
   const dateStr = refDate.toISOString().split('T')[0];
-  saveAs(zipBlob, `${levelNames[level]}导出_${dateStr}.zip`);
+  const fileName = `${levelNames[level]}导出_${dateStr}.zip`;
+
+  if (isTauri()) {
+    // 桌面版：弹系统保存对话框，让用户选择路径与文件名
+    const { save } = await import('@tauri-apps/plugin-dialog');
+    const { writeFile } = await import('@tauri-apps/plugin-fs');
+    const target = await save({
+      defaultPath: fileName,
+      filters: [{ name: 'ZIP 压缩包', extensions: ['zip'] }],
+    });
+    if (!target) return; // 用户取消
+    await writeFile(target, new Uint8Array(await zipBlob.arrayBuffer()));
+    return;
+  }
+
+  // 网页版：浏览器下载
+  saveAs(zipBlob, fileName);
 }
