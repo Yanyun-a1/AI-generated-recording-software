@@ -84,7 +84,9 @@ export default function Home() {
             className="px-6 py-5 border-b border-white/10"
             style={{
               borderRadius: `${style.borderRadius}px ${style.borderRadius}px 0 0`,
-              background: 'rgba(8, 4, 18, 0.92)',
+              background: 'rgb(8, 4, 18)',
+              position: 'relative',
+              zIndex: 1,
             }}
           >
             <div className="flex items-center justify-between">
@@ -92,8 +94,7 @@ export default function Home() {
                 <h1
                   className="text-xl font-bold tracking-wide"
                   style={{
-                    color: '#fff',
-                    textShadow: `0 0 12px ${style.primaryColor}, 0 0 30px ${style.primaryColor}60, 0 2px 4px rgba(0,0,0,1)`,
+                    color: '#ffffff',
                   }}
                 >
                   大数据竞赛程序记录
