@@ -4,12 +4,86 @@ import { saveAs } from 'file-saver';
 import type { MediaItem } from './types';
 import { readFileBytes, isTauri } from './storage-client';
 
-/** 富文本 HTML 转纯文本（导出 Word 用） */
-function htmlToPlainText(html: string): string {
-  if (typeof document === 'undefined') return html;
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  return div.textContent || '';
+/** 富文本 HTML 解析：把 font/b/u 等格式映射为 docx 的 TextRun 格式 */
+interface RunStyle {
+  bold: boolean;
+  underline: boolean;
+  italic: boolean;
+  color?: string;
+  font?: string;
+}
+
+function mergeElementStyle(el: Element, acc: RunStyle): RunStyle {
+  const s: RunStyle = { ...acc };
+  const tag = el.tagName.toUpperCase();
+  if (tag === 'B' || tag === 'STRONG') s.bold = true;
+  if (tag === 'U') s.underline = true;
+  if (tag === 'I' || tag === 'EM') s.italic = true;
+  if (tag === 'FONT') {
+    const color = el.getAttribute('color');
+    if (color) s.color = color.replace(/^#/, '');
+    const face = el.getAttribute('face');
+    if (face) s.font = face.split(',')[0].replace(/"/g, '');
+  }
+  return s;
+}
+
+function htmlToDocxParagraphs(html: string): Paragraph[] {
+  if (typeof document === 'undefined') return [];
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const paragraphs: Paragraph[] = [];
+  let runs: TextRun[] = [];
+
+  const flush = () => {
+    if (runs.length) {
+      paragraphs.push(new Paragraph({ children: runs, spacing: { after: 100 } }));
+      runs = [];
+    }
+  };
+
+  const walkChildren = (el: Element, style: RunStyle) => {
+    el.childNodes.forEach((child) => walk(child, style));
+  };
+
+  const walk = (node: Node, style: RunStyle) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent || '';
+      if (text) {
+        runs.push(
+          new TextRun({
+            text,
+            size: 24,
+            bold: style.bold,
+            underline: style.underline ? {} : undefined,
+            italics: style.italic,
+            color: style.color,
+            font: style.font,
+          })
+        );
+      }
+      return;
+    }
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as Element;
+      const tag = el.tagName.toUpperCase();
+      const s = mergeElementStyle(el, style);
+      if (tag === 'BR') {
+        flush();
+        return;
+      }
+      if (tag === 'DIV' || tag === 'P') {
+        walkChildren(el, s);
+        flush();
+        return;
+      }
+      walkChildren(el, s);
+    }
+  };
+
+  walkChildren(doc.body, { bold: false, underline: false, italic: false });
+  flush();
+  return paragraphs;
 }
 
 /** 根据文件路径推断 MIME */
@@ -113,12 +187,7 @@ async function createWordDocument(item: MediaItem): Promise<Blob> {
           ],
           spacing: { after: 400 },
         }),
-        ...htmlToPlainText(item.content).split('\n').map(line =>
-          new Paragraph({
-            children: [new TextRun({ text: line, size: 24 })],
-            spacing: { after: 100 },
-          })
-        ),
+        ...htmlToDocxParagraphs(item.content),
       ],
     }],
   });
