@@ -1,35 +1,179 @@
-import type { Metadata } from 'next';
-import Image from 'next/image';
+'use client';
 
-export const metadata: Metadata = {
-  title: '扣子编程 - AI 开发伙伴',
-  description: '扣子编程，你的 AI 开发伙伴已就位',
-};
+import { useState } from 'react';
+import NeonBackground from '@/components/NeonBackground';
+import MediaImporter from '@/components/MediaImporter';
+import MediaCard from '@/components/MediaCard';
+import StyleCustomizer from '@/components/StyleCustomizer';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { DEFAULT_STYLE } from '@/lib/types';
+import type { MediaItem, StyleConfig } from '@/lib/types';
+
+type Tab = 'records' | 'add' | 'style';
 
 export default function Home() {
+  const [activeTab, setActiveTab] = useState<Tab>('records');
+  const [items, setItems] = useLocalStorage<MediaItem[]>('bdc-records', []);
+  const [style, setStyle] = useLocalStorage<StyleConfig>('bdc-style', DEFAULT_STYLE);
+
+  const handleAddItem = (item: MediaItem) => {
+    setItems((prev) => [item, ...prev]);
+    setActiveTab('records');
+  };
+
+  const handleDeleteItem = (id: string) => {
+    setItems((prev) => prev.filter((i) => i.id !== id));
+  };
+
+  const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
+    {
+      key: 'records',
+      label: '记录列表',
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+      ),
+    },
+    {
+      key: 'add',
+      label: '添加记录',
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+      ),
+    },
+    {
+      key: 'style',
+      label: '样式设置',
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+        </svg>
+      ),
+    },
+  ];
+
+  const textCount = items.filter((i) => i.type === 'text').length;
+  const imageCount = items.filter((i) => i.type === 'image').length;
+  const videoCount = items.filter((i) => i.type === 'video').length;
+
   return (
-    <div className="flex h-full items-center justify-center bg-background text-foreground transition-colors duration-300 dark:bg-background dark:text-foreground overflow-hidden min-h-screen">
-      {/* 主容器 */}
-      <main className="flex w-full h-full max-w-3xl flex-col items-center justify-center px-16 py-32 sm:items-center">
-        <div className="flex flex-col items-center justify-between gap-4">
-           <Image
-            src="https://lf-coze-web-cdn.coze.cn/obj/eden-cn/lm-lgvj/ljhwZthlaukjlkulzlp/coze-coding/icon/coze-coding.gif"
-            alt="扣子编程 Logo"
-            width={156}
-            height={130}
-          />
-          <div>
-            <div className="flex flex-col items-center gap-2 text-center sm:items-center sm:text-center">
-              <h1 className="max-w-xl text-base font-semibold leading-tight tracking-tight text-foreground dark:text-foreground">
-                应用开发中
-              </h1>
-              <p className="max-w-2xl text-sm leading-8 text-muted-foreground dark:text-muted-foreground">
-                请稍后，页面即将呈现
-              </p>
+    <>
+      <NeonBackground
+        primaryColor={style.primaryColor}
+        secondaryColor={style.secondaryColor}
+        accentColor={style.accentColor}
+        animationSpeed={style.animationSpeed}
+      />
+
+      <div className="flex items-center justify-center min-h-screen p-4 sm:p-8">
+        <div
+          className="w-full max-w-2xl border border-white/10 overflow-hidden"
+          style={{
+            borderRadius: style.borderRadius,
+            background: `rgba(15, 10, 30, ${style.panelOpacity})`,
+            backdropFilter: `blur(${style.panelBlur}px)`,
+            WebkitBackdropFilter: `blur(${style.panelBlur}px)`,
+            boxShadow: `0 0 60px ${style.primaryColor}10, 0 0 120px ${style.secondaryColor}08, inset 0 1px 0 rgba(255,255,255,0.05)`,
+          }}
+        >
+          {/* Header */}
+          <div
+            className="px-6 py-5 border-b border-white/10"
+            style={{ borderRadius: `${style.borderRadius}px ${style.borderRadius}px 0 0` }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h1
+                  className="text-xl font-bold tracking-wide"
+                  style={{
+                    background: `linear-gradient(135deg, ${style.primaryColor}, ${style.secondaryColor}, ${style.accentColor})`,
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    textShadow: `0 0 30px ${style.primaryColor}40`,
+                  }}
+                >
+                  大数据竞赛程序记录
+                </h1>
+                <p className="text-xs text-white/30 mt-1">Big Data Competition Recorder</p>
+              </div>
+              <div className="flex gap-3 text-xs text-white/30">
+                <span>{textCount} 文字</span>
+                <span>{imageCount} 图片</span>
+                <span>{videoCount} 视频</span>
+              </div>
             </div>
           </div>
+
+          {/* Tabs */}
+          <div className="flex border-b border-white/5">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-all duration-200 relative"
+                style={{
+                  color: activeTab === tab.key ? style.primaryColor : 'rgba(255,255,255,0.4)',
+                }}
+              >
+                {tab.icon}
+                <span>{tab.label}</span>
+                {activeTab === tab.key && (
+                  <span
+                    className="absolute bottom-0 left-1/4 right-1/4 h-0.5"
+                    style={{
+                      background: `linear-gradient(90deg, transparent, ${style.primaryColor}, transparent)`,
+                      boxShadow: `0 0 8px ${style.primaryColor}60`,
+                    }}
+                  />
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Content */}
+          <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+            {activeTab === 'records' && (
+              <div className="space-y-4">
+                {items.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-white/20">
+                    <svg className="w-16 h-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                    </svg>
+                    <p className="text-sm">暂无记录</p>
+                    <p className="text-xs mt-1">点击「添加记录」开始记录你的竞赛历程</p>
+                  </div>
+                ) : (
+                  items.map((item) => (
+                    <MediaCard
+                      key={item.id}
+                      item={item}
+                      onDelete={handleDeleteItem}
+                      styleConfig={style}
+                    />
+                  ))
+                )}
+              </div>
+            )}
+
+            {activeTab === 'add' && (
+              <MediaImporter onAdd={handleAddItem} styleConfig={style} />
+            )}
+
+            {activeTab === 'style' && (
+              <StyleCustomizer config={style} onChange={setStyle} />
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-3 border-t border-white/5 flex items-center justify-between text-xs text-white/20">
+            <span>高职版 · 大数据竞赛</span>
+            <span>数据存储于本地浏览器</span>
+          </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </>
   );
 }

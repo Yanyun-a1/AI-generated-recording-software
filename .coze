@@ -1,9 +1,14 @@
 [project]
+sub_id = "76da50b3"
+name = "bigdata-competition-recorder"
 requires = [ "nodejs-24" ]
 project_type = "web"
 template = "nextjs"
 version = "0.0.35"
 appliedPatches = [ ]
+
+[preview]
+preview_enable = "enabled"
 
 [dev]
 build = [ "bash", "./scripts/prepare.sh" ]
@@ -15,3 +20,10 @@ deps = [ "git" ]
 build = [ "bash", "./scripts/build.sh" ]
 run = [ "bash", "./scripts/start.sh" ]
 deps = [ "git" ]
+
+[deploy.profile]
+kind = "service"
+flavor = "web"
+
+[subprojects]
+path = ["."]

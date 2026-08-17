@@ -20,9 +20,16 @@
 ├── src/
 │   ├── app/                # 页面路由与布局
 │   ├── components/ui/      # Shadcn UI 组件库
+│   ├── components/         # 业务组件
+│   │   ├── NeonBackground.tsx   # 紫色霓虹流动波纹背景 (Canvas)
+│   │   ├── MediaImporter.tsx    # 多媒体导入组件 (文字/图片/视频)
+│   │   ├── MediaCard.tsx        # 媒体记录卡片展示
+│   │   └── StyleCustomizer.tsx  # 自定义样式面板 (颜色/动画/面板)
 │   ├── hooks/              # 自定义 Hooks
+│   │   └── useLocalStorage.ts   # localStorage 持久化 Hook
 │   ├── lib/                # 工具库
-│   │   └── utils.ts        # 通用工具函数 (cn)
+│   │   ├── utils.ts        # 通用工具函数 (cn)
+│   │   └── types.ts        # 类型定义 (MediaItem, StyleConfig)
 │   └── server.ts           # 自定义服务端入口
 ├── next.config.ts          # Next.js 配置
 ├── package.json            # 项目依赖管理
@@ -63,3 +70,20 @@
 
 - 模板默认预装核心组件库 `shadcn/ui`，位于`src/components/ui/`目录下
 - Next.js 项目**必须默认**采用 shadcn/ui 组件、风格和规范，**除非用户指定用其他的组件和规范。**
+
+## 项目概述
+
+大数据竞赛高职版程序记录软件。支持文字、图片、视频等多媒体内容的导入与管理，提供紫色霓虹流动波纹背景视觉效果，支持自定义样式（主题色、动画速度、面板透明度/模糊度、字体大小、圆角等）。数据持久化在浏览器 localStorage。
+
+## 关键入口
+
+- 主页面：`src/app/page.tsx` — 居中面板 + Tab 导航（记录列表/添加记录/样式设置）
+- 背景动画：`src/components/NeonBackground.tsx` — Canvas 实现的霓虹波纹流动效果
+- 数据持久化：`src/hooks/useLocalStorage.ts` — 通用 localStorage Hook
+- 类型定义：`src/lib/types.ts` — MediaItem、StyleConfig 及默认样式
+
+## 运行与预览
+
+- 预览型项目，通过 `scripts/dev.sh` 启动 Next.js dev server
+- 端口从 `.preview` 读取，fallback 5000
+- 绑定 0.0.0.0
