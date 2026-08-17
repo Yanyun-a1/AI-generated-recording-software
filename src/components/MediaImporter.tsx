@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import type { MediaItem } from '@/lib/types';
+import { addText, addFile } from '@/lib/storage-client';
 
 interface MediaImporterProps {
   onAdd: (item: MediaItem) => void;
@@ -50,13 +51,7 @@ export default function MediaImporter({ onAdd, styleConfig }: MediaImporterProps
     if (!plainText.trim() || uploading) return;
     setUploading(true);
     try {
-      const res = await fetch('/api/records', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'text', title, content }),
-      });
-      if (!res.ok) throw new Error('save failed');
-      const item: MediaItem = await res.json();
+      const item = await addText(title, content);
       onAdd(item);
       if (editorRef.current) editorRef.current.innerHTML = '';
       setTitle('');
@@ -77,14 +72,7 @@ export default function MediaImporter({ onAdd, styleConfig }: MediaImporterProps
 
     setUploading(true);
     try {
-      const buffer = await file.arrayBuffer();
-      const res = await fetch('/api/records', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/octet-stream', 'X-Filename': file.name, 'X-File-Type': file.type },
-        body: buffer,
-      });
-      if (!res.ok) throw new Error('upload failed');
-      const item: MediaItem = await res.json();
+      const item = await addFile(title, file);
       onAdd(item);
     } catch {
       alert('上传失败，请重试');

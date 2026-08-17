@@ -11,6 +11,7 @@ import { DEFAULT_STYLE } from '@/lib/types';
 import type { MediaItem, StyleConfig } from '@/lib/types';
 import { getDateKey, isToday, formatLunar } from '@/lib/dateUtils';
 import { exportRecords } from '@/lib/exportUtils';
+import { getRecords, deleteRecord, saveStyle } from '@/lib/storage-client';
 
 type Tab = 'records' | 'add' | 'style';
 
@@ -31,10 +32,9 @@ export default function Home() {
     setLunarDate(formatLunar(new Date()));
   }, []);
 
-  // 从本地存储层加载记录与样式
+  // 从存储层加载记录与样式（桌面版走 Rust，网页版走 API）
   useEffect(() => {
-    fetch('/api/records')
-      .then((r) => r.json())
+    getRecords()
       .then((data) => {
         if (Array.isArray(data.items)) setItems(data.items);
         if (data.style) setStyle(data.style);
@@ -49,8 +49,7 @@ export default function Home() {
 
   const handleDeleteItem = async (id: string) => {
     try {
-      const res = await fetch(`/api/records?id=${id}`, { method: 'DELETE' });
-      if (!res.ok) return;
+      await deleteRecord(id);
       setItems((prev) => prev.filter((i) => i.id !== id));
     } catch {
       // ignore
@@ -76,11 +75,7 @@ export default function Home() {
     setStyle(next);
     if (styleTimer.current) clearTimeout(styleTimer.current);
     styleTimer.current = setTimeout(() => {
-      fetch('/api/records', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ style: next }),
-      }).catch(() => {});
+      saveStyle(next).catch(() => {});
     }, 400);
   };
 

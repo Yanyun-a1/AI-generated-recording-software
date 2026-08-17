@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { MediaItem } from '@/lib/types';
+import { resolveMediaUrl } from '@/lib/storage-client';
 
 interface MediaCardProps {
   item: MediaItem;
@@ -20,6 +21,20 @@ export default function MediaCard({ item, onDelete, onEdit, styleConfig }: Media
   const [mediaExpanded, setMediaExpanded] = useState(false);
   const [editTitle, setEditTitle] = useState(item.title);
   const [editContent, setEditContent] = useState(item.content);
+  const [mediaSrc, setMediaSrc] = useState(item.content);
+
+  // 图片/视频 URL 解析：桌面版转 asset 协议地址，网页版转 /uploads 路径
+  useEffect(() => {
+    let alive = true;
+    resolveMediaUrl(item.content)
+      .then((url) => {
+        if (alive) setMediaSrc(url);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [item.content]);
 
   const date = new Date(item.createdAt);
   const timeStr = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
@@ -121,7 +136,7 @@ export default function MediaCard({ item, onDelete, onEdit, styleConfig }: Media
           {item.type === 'image' && (
             <div className="flex justify-center cursor-pointer" onClick={() => setMediaExpanded(true)}>
               <img
-                src={item.content}
+                src={mediaSrc}
                 alt={item.title}
                 className="object-cover w-full h-20 border border-white/10 hover:border-white/30 transition-colors"
                 style={{ borderRadius: styleConfig.borderRadius - 8 }}
@@ -131,7 +146,7 @@ export default function MediaCard({ item, onDelete, onEdit, styleConfig }: Media
           {item.type === 'video' && (
             <div className="flex justify-center cursor-pointer" onClick={() => setMediaExpanded(true)}>
               <video
-                src={item.content}
+                src={mediaSrc}
                 className="object-cover w-full h-20 border border-white/10 hover:border-white/30 transition-colors pointer-events-none"
                 style={{ borderRadius: styleConfig.borderRadius - 8 }}
               />
@@ -190,7 +205,7 @@ export default function MediaCard({ item, onDelete, onEdit, styleConfig }: Media
           <div className="max-w-[90vw] max-h-[85vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
             {item.type === 'image' && (
               <img
-                src={item.content}
+                src={mediaSrc}
                 alt={item.title}
                 className="max-w-full max-h-[85vh] object-contain"
                 style={{ borderRadius: styleConfig.borderRadius }}
@@ -198,7 +213,7 @@ export default function MediaCard({ item, onDelete, onEdit, styleConfig }: Media
             )}
             {item.type === 'video' && (
               <video
-                src={item.content}
+                src={mediaSrc}
                 controls
                 autoPlay
                 className="max-w-full max-h-[85vh]"
