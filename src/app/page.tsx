@@ -171,79 +171,84 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Content */}
-          <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+          {/* Toolbar - always visible */}
+          <div className="px-6 pt-4 flex items-center gap-2">
             {activeTab === 'records' && (
-              <div>
-                {/* Date filter bar + view toggle */}
-                <div className="flex items-center gap-2 mb-3">
-                  <input
-                    type="date"
-                    value={filterDate}
-                    onChange={(e) => setFilterDate(e.target.value)}
-                    className="bg-white/5 border border-white/10 text-white/70 text-xs px-3 py-1.5 outline-none focus:border-white/25 transition-colors"
-                    style={{ borderRadius: style.borderRadius - 6, colorScheme: 'dark' }}
-                  />
-                  {filterDate && (
-                    <button
-                      onClick={() => setFilterDate('')}
-                      className="text-xs text-white/30 hover:text-white/60 transition-colors px-2 py-1.5"
-                      style={{ borderRadius: style.borderRadius - 6, background: 'rgba(255,255,255,0.05)' }}
-                    >
-                      清除筛选
-                    </button>
-                  )}
-                  {filterDate && (
-                    <span className="text-xs text-white/25">
-                      {filteredItems.length} 条记录
-                    </span>
-                  )}
-                  <div className="ml-auto flex items-center gap-1 bg-white/5 border border-white/10 p-0.5" style={{ borderRadius: style.borderRadius - 6 }}>
-                    <button
-                      onClick={() => setViewMode('grid')}
-                      className={`p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-white/10 text-white/80' : 'text-white/30 hover:text-white/50'}`}
-                      style={{ borderRadius: style.borderRadius - 8 }}
-                      title="网格视图"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => setViewMode('list')}
-                      className={`p-1.5 transition-colors ${viewMode === 'list' ? 'bg-white/10 text-white/80' : 'text-white/30 hover:text-white/50'}`}
-                      style={{ borderRadius: style.borderRadius - 8 }}
-                      title="列表视图"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                      </svg>
-                    </button>
-                  </div>
+              <>
+                <input
+                  type="date"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                  className="bg-white/5 border border-white/10 text-white/70 text-xs px-3 py-1.5 outline-none focus:border-white/25 transition-colors"
+                  style={{ borderRadius: style.borderRadius - 6, colorScheme: 'dark' }}
+                />
+                {filterDate && (
                   <button
-                    onClick={() => setActiveTab('add')}
-                    className="p-1.5 text-white/40 hover:text-white/80 transition-colors"
-                    style={{ borderRadius: style.borderRadius - 8 }}
-                    title="添加记录"
+                    onClick={() => setFilterDate('')}
+                    className="text-xs text-white/30 hover:text-white/60 transition-colors px-2 py-1.5"
+                    style={{ borderRadius: style.borderRadius - 6, background: 'rgba(255,255,255,0.05)' }}
                   >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                    清除筛选
+                  </button>
+                )}
+                {filterDate && (
+                  <span className="text-xs text-white/25">
+                    {filteredItems.length} 条记录
+                  </span>
+                )}
+                <div className="flex items-center gap-1 bg-white/5 border border-white/10 p-0.5" style={{ borderRadius: style.borderRadius - 6 }}>
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-white/10 text-white/80' : 'text-white/30 hover:text-white/50'}`}
+                    style={{ borderRadius: style.borderRadius - 8 }}
+                    title="网格视图"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                     </svg>
                   </button>
                   <button
-                    onClick={() => setActiveTab('style')}
-                    className="p-1.5 text-white/40 hover:text-white/80 transition-colors"
+                    onClick={() => setViewMode('list')}
+                    className={`p-1.5 transition-colors ${viewMode === 'list' ? 'bg-white/10 text-white/80' : 'text-white/30 hover:text-white/50'}`}
                     style={{ borderRadius: style.borderRadius - 8 }}
-                    title="样式设置"
+                    title="列表视图"
                   >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
                   </button>
                 </div>
+              </>
+            )}
+            <div className="ml-auto flex items-center gap-1">
+              <button
+                onClick={() => setActiveTab(activeTab === 'add' ? 'records' : 'add')}
+                className={`p-1.5 transition-colors ${activeTab === 'add' ? 'bg-white/10 text-white/80' : 'text-white/40 hover:text-white/80'}`}
+                style={{ borderRadius: style.borderRadius - 8 }}
+                title={activeTab === 'add' ? '返回列表' : '添加记录'}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setActiveTab(activeTab === 'style' ? 'records' : 'style')}
+                className={`p-1.5 transition-colors ${activeTab === 'style' ? 'bg-white/10 text-white/80' : 'text-white/40 hover:text-white/80'}`}
+                style={{ borderRadius: style.borderRadius - 8 }}
+                title={activeTab === 'style' ? '返回列表' : '样式设置'}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </button>
+            </div>
+          </div>
 
-                {viewMode === 'grid' ? (
+          {/* Content */}
+          <div className="px-6 pb-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+            {activeTab === 'records' && (
+              viewMode === 'grid' ? (
                 <div className="grid grid-cols-3 gap-3">
                   {filteredItems.length === 0 ? (
                     <div className="col-span-3 flex flex-col items-center justify-center py-16 text-white/20">
@@ -324,9 +329,9 @@ export default function Home() {
                     ))
                   )}
                 </div>
-                )}
-              </div>
-            )}
+                )
+              )
+            }
 
             {activeTab === 'add' && (
               <MediaImporter onAdd={handleAddItem} styleConfig={style} />
