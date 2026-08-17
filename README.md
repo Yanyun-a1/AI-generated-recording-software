@@ -1,6 +1,6 @@
 # AI-generated-recording-software
 
-**大数据竞赛程序记录软件** —— 支持文字、图片、视频等多媒体内容导入与管理的记录工具，紫色霓虹流动波纹背景，支持自定义样式。
+**记录软件** —— 支持文字、图片、视频等多媒体内容导入与管理的记录工具，紫色霓虹流动波纹背景，支持自定义样式。
 
 项目以**同一套代码运行两种形态**：
 
@@ -57,7 +57,7 @@ pnpm tauri:build
 产物位于：
 
 ```
-src-tauri/target/release/bundle/nsis/大数据竞赛程序记录_1.0.0_x64-setup.exe   # 安装向导
+src-tauri/target/release/bundle/nsis/记录软件_1.0.0_x64-setup.exe   # 安装向导
 ```
 
 ### 桌面版数据位置
