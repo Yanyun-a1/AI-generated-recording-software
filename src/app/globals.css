@@ -2,6 +2,12 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+[contenteditable][data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  color: rgba(255, 255, 255, 0.3);
+  pointer-events: none;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

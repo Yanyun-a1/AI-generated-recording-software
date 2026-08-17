@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import type { MediaItem } from '@/lib/types';
 
 interface MediaImporterProps {
@@ -11,26 +11,55 @@ interface MediaImporterProps {
   };
 }
 
+const FONT_FAMILIES = [
+  { label: '默认', value: 'inherit' },
+  { label: '宋体', value: 'SimSun, serif' },
+  { label: '黑体', value: 'SimHei, sans-serif' },
+  { label: '楷体', value: 'KaiTi, serif' },
+  { label: '仿宋', value: 'FangSong, serif' },
+  { label: '微软雅黑', value: '"Microsoft YaHei", sans-serif' },
+  { label: 'Arial', value: 'Arial, sans-serif' },
+  { label: 'Times New Roman', value: '"Times New Roman", serif' },
+  { label: 'Georgia', value: 'Georgia, serif' },
+  { label: 'Courier New', value: '"Courier New", monospace' },
+];
+
+const FONT_COLORS = [
+  '#ffffff', '#ff6b6b', '#ffa94d', '#ffd43b', '#69db7c',
+  '#4dabf7', '#9775fa', '#f783ac', '#868e96', '#20c997',
+];
+
 export default function MediaImporter({ onAdd, styleConfig }: MediaImporterProps) {
   const [activeTab, setActiveTab] = useState<'text' | 'image' | 'video'>('text');
-  const [textContent, setTextContent] = useState('');
   const [title, setTitle] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [showFontList, setShowFontList] = useState(false);
+  const [showColorList, setShowColorList] = useState(false);
+  const [currentFont, setCurrentFont] = useState('inherit');
+  const [currentColor, setCurrentColor] = useState('#ffffff');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  const execCommand = useCallback((command: string, value?: string) => {
+    document.execCommand(command, false, value);
+    editorRef.current?.focus();
+  }, []);
 
   const handleAddText = async () => {
-    if (!textContent.trim() || uploading) return;
+    const content = editorRef.current?.innerHTML || '';
+    const plainText = editorRef.current?.innerText || '';
+    if (!plainText.trim() || uploading) return;
     setUploading(true);
     try {
       const res = await fetch('/api/records', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'text', title, content: textContent }),
+        body: JSON.stringify({ type: 'text', title, content }),
       });
       if (!res.ok) throw new Error('save failed');
       const item: MediaItem = await res.json();
       onAdd(item);
-      setTextContent('');
+      if (editorRef.current) editorRef.current.innerHTML = '';
       setTitle('');
     } catch {
       alert('文字保存失败，请重试');
@@ -102,17 +131,112 @@ export default function MediaImporter({ onAdd, styleConfig }: MediaImporterProps
 
       {activeTab === 'text' && (
         <div className="space-y-3">
-          <textarea
-            placeholder="输入文字内容..."
-            value={textContent}
-            onChange={(e) => setTextContent(e.target.value)}
-            rows={6}
-            className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 px-4 py-3 outline-none focus:border-white/30 transition-colors resize-none"
+          {/* Formatting Toolbar */}
+          <div
+            className="flex items-center gap-1 px-2 py-1.5 bg-white/5 border border-white/10 flex-wrap"
             style={{ borderRadius: styleConfig.borderRadius - 4 }}
+          >
+            {/* Font Family */}
+            <div className="relative">
+              <button
+                onClick={() => { setShowFontList(!showFontList); setShowColorList(false); }}
+                className="px-2 py-1 text-xs text-white/60 hover:text-white/90 hover:bg-white/10 transition-colors"
+                style={{ borderRadius: 4 }}
+                title="字体"
+              >
+                字体
+              </button>
+              {showFontList && (
+                <div className="absolute top-full left-0 mt-1 z-50 bg-[#1a1025] border border-white/15 shadow-xl min-w-[160px] py-1" style={{ borderRadius: 6 }}>
+                  {FONT_FAMILIES.map((font) => (
+                    <button
+                      key={font.value}
+                      onClick={() => {
+                        setCurrentFont(font.value);
+                        execCommand('fontName', font.value === 'inherit' ? 'inherit' : font.value.split(',')[0].replace(/"/g, ''));
+                        setShowFontList(false);
+                      }}
+                      className="w-full px-3 py-1.5 text-left text-xs text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+                      style={{ fontFamily: font.value }}
+                    >
+                      {font.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="w-px h-4 bg-white/10 mx-1" />
+
+            {/* Font Color */}
+            <div className="relative">
+              <button
+                onClick={() => { setShowColorList(!showColorList); setShowFontList(false); }}
+                className="px-2 py-1 text-xs hover:bg-white/10 transition-colors flex items-center gap-1"
+                style={{ borderRadius: 4 }}
+                title="字体颜色"
+              >
+                <span className="text-white/60">A</span>
+                <span className="w-3 h-3 border border-white/20" style={{ background: currentColor }} />
+              </button>
+              {showColorList && (
+                <div className="absolute top-full left-0 mt-1 z-50 bg-[#1a1025] border border-white/15 shadow-xl p-2 grid grid-cols-5 gap-1.5" style={{ borderRadius: 6 }}>
+                  {FONT_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => {
+                        setCurrentColor(color);
+                        execCommand('foreColor', color);
+                        setShowColorList(false);
+                      }}
+                      className="w-6 h-6 border border-white/20 hover:scale-110 transition-transform"
+                      style={{ background: color, borderRadius: 4 }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="w-px h-4 bg-white/10 mx-1" />
+
+            {/* Bold */}
+            <button
+              onClick={() => execCommand('bold')}
+              className="px-2 py-1 text-xs font-bold text-white/60 hover:text-white/90 hover:bg-white/10 transition-colors"
+              style={{ borderRadius: 4 }}
+              title="加粗"
+            >
+              B
+            </button>
+
+            {/* Underline */}
+            <button
+              onClick={() => execCommand('underline')}
+              className="px-2 py-1 text-xs text-white/60 hover:text-white/90 hover:bg-white/10 transition-colors underline"
+              style={{ borderRadius: 4 }}
+              title="下划线"
+            >
+              U
+            </button>
+          </div>
+
+          {/* Rich Text Editor */}
+          <div
+            ref={editorRef}
+            contentEditable
+            suppressContentEditableWarning
+            data-placeholder="输入文字内容..."
+            className="w-full bg-white/5 border border-white/10 text-white px-4 py-3 outline-none focus:border-white/30 transition-colors overflow-y-auto min-h-[150px] max-h-[300px]"
+            style={{
+              borderRadius: styleConfig.borderRadius - 4,
+              fontFamily: currentFont,
+            }}
+            onFocus={() => { setShowFontList(false); setShowColorList(false); }}
           />
+
           <button
             onClick={handleAddText}
-            disabled={!textContent.trim() || uploading}
+            disabled={uploading}
             className="w-full py-2.5 font-medium text-white transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
             style={{
               borderRadius: styleConfig.borderRadius - 4,
