@@ -50,6 +50,6 @@ pnpm tauri:build
 
 ## 注意事项
 
-- 桌面版数据存储在 localStorage（浏览器本地），与网页版数据不互通
+- 桌面版数据存储在应用数据目录（AppData/Roaming/com.bigdata.recorder/uploads），与网页版数据不互通
 - 构建后的 .exe 约 5-10MB，远小于 Electron 方案
 - 后续扩展 Mac 版只需在 Mac 上执行同样的构建命令

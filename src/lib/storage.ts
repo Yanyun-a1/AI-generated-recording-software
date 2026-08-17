@@ -21,7 +21,7 @@ export interface StoreData {
   title?: string;
 }
 
-export const DEFAULT_TITLE = '大数据竞赛程序记录';
+export const DEFAULT_TITLE = '记录软件';
 
 async function ensureUploads() {
   await fs.mkdir(path.join(UPLOADS_ROOT, 'images'), { recursive: true });

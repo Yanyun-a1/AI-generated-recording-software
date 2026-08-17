@@ -61,7 +61,7 @@ struct StoreData {
 }
 
 fn default_title() -> String {
-    "大数据竞赛程序记录".into()
+    "记录软件".into()
 }
 
 fn now_ms() -> u64 {

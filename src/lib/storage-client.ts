@@ -14,7 +14,7 @@ export interface StoreData {
   title?: string;
 }
 
-export const DEFAULT_TITLE = '大数据竞赛程序记录';
+export const DEFAULT_TITLE = '记录软件';
 
 /** 是否运行在 Tauri 桌面环境 */
 export function isTauri(): boolean {
