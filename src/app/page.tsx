@@ -298,7 +298,7 @@ export default function Home() {
           </div>
 
           {/* Content */}
-          <div className="px-6 pb-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+          <div className="px-6 pt-5 pb-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
             {activeTab === 'records' && (
               viewMode === 'grid' ? (
                 <div className="grid grid-cols-3 gap-3">
