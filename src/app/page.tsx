@@ -11,7 +11,7 @@ import { DEFAULT_STYLE } from '@/lib/types';
 import type { MediaItem, StyleConfig } from '@/lib/types';
 import { getDateKey, isToday, formatLunar } from '@/lib/dateUtils';
 import { exportRecords } from '@/lib/exportUtils';
-import { getRecords, deleteRecord, saveStyle } from '@/lib/storage-client';
+import { getRecords, deleteRecord, saveStyle, updateRecord } from '@/lib/storage-client';
 
 type Tab = 'records' | 'add' | 'style';
 
@@ -58,12 +58,7 @@ export default function Home() {
 
   const handleEditItem = async (id: string, title: string, content: string) => {
     try {
-      const res = await fetch(`/api/records`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, title, content }),
-      });
-      if (!res.ok) return;
+      await updateRecord(id, title, content);
       setItems((prev) => prev.map((i) => i.id === id ? { ...i, title, content } : i));
     } catch {
       // ignore

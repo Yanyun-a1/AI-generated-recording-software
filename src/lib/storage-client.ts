@@ -117,6 +117,21 @@ export async function saveStyle(style: StyleConfig): Promise<void> {
   if (!res.ok) throw new Error('样式保存失败');
 }
 
+/** 更新记录（标题；文字记录同时更新内容） */
+export async function updateRecord(id: string, title: string, content: string): Promise<void> {
+  if (isTauri()) {
+    const { invoke } = await import('@tauri-apps/api/core');
+    await invoke('update_record', { id, title, content });
+    return;
+  }
+  const res = await fetch('/api/records', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, title, content }),
+  });
+  if (!res.ok) throw new Error('更新失败');
+}
+
 /**
  * 将记录内容解析为可显示的 URL
  * - 桌面版：content = uploads/xxx → convertFileSrc(应用数据目录 + content)（asset protocol）

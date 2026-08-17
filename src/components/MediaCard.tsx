@@ -4,6 +4,14 @@ import { useState, useEffect } from 'react';
 import type { MediaItem } from '@/lib/types';
 import { resolveMediaUrl } from '@/lib/storage-client';
 
+/** 富文本 HTML 转纯文本（用于编辑框显示） */
+function htmlToPlainText(html: string): string {
+  if (typeof document === 'undefined') return html;
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return div.textContent || '';
+}
+
 interface MediaCardProps {
   item: MediaItem;
   onDelete: (id: string) => void;
@@ -20,7 +28,7 @@ export default function MediaCard({ item, onDelete, onEdit, styleConfig }: Media
   const [editing, setEditing] = useState(false);
   const [mediaExpanded, setMediaExpanded] = useState(false);
   const [editTitle, setEditTitle] = useState(item.title);
-  const [editContent, setEditContent] = useState(item.content);
+  const [editContent, setEditContent] = useState(htmlToPlainText(item.content));
   const [mediaSrc, setMediaSrc] = useState(item.content);
 
   // 图片/视频 URL 解析：桌面版转 asset 协议地址，网页版转 /uploads 路径
@@ -48,7 +56,7 @@ export default function MediaCard({ item, onDelete, onEdit, styleConfig }: Media
 
   const handleCancel = () => {
     setEditTitle(item.title);
-    setEditContent(item.content);
+    setEditContent(htmlToPlainText(item.content));
     setEditing(false);
   };
 
@@ -129,7 +137,10 @@ export default function MediaCard({ item, onDelete, onEdit, styleConfig }: Media
               />
             ) : (
               <div className="text-white/60 text-xs leading-relaxed overflow-hidden" style={{ maxHeight: expanded ? '300px' : '80px' }}>
-                <div className="whitespace-pre-wrap">{item.content}</div>
+                <div
+                  className="whitespace-pre-wrap"
+                  dangerouslySetInnerHTML={{ __html: item.content }}
+                />
               </div>
             )
           )}

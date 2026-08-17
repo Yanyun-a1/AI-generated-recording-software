@@ -197,6 +197,28 @@ fn delete_record(app: AppHandle, id: String) -> Result<(), String> {
     write_store(&app, &data)
 }
 
+/// 更新记录（标题；文字记录同时更新内容并重写 texts/<id>.md）
+#[tauri::command]
+fn update_record(
+    app: AppHandle,
+    id: String,
+    title: String,
+    content: String,
+) -> Result<(), String> {
+    let mut data = read_store(&app)?;
+    let Some(item) = data.items.iter_mut().find(|i| i.id == id) else {
+        return Err("记录不存在".into());
+    };
+    item.title = title;
+    if item.kind == "text" {
+        item.content = content.clone();
+        let root = ensure_dirs(&app)?;
+        fs::write(root.join("texts").join(format!("{id}.md")), &content)
+            .map_err(|e| format!("更新文字文件失败: {e}"))?;
+    }
+    write_store(&app, &data)
+}
+
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
@@ -204,7 +226,8 @@ fn main() {
             save_style,
             save_text,
             save_file,
-            delete_record
+            delete_record,
+            update_record
         ])
         .run(tauri::generate_context!())
         .expect("启动应用失败");
