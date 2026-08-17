@@ -8,7 +8,7 @@ import StyleCustomizer from '@/components/StyleCustomizer';
 import DateDisplay from '@/components/DateDisplay';
 import { DEFAULT_STYLE } from '@/lib/types';
 import type { MediaItem, StyleConfig } from '@/lib/types';
-import { getDateKey, isToday } from '@/lib/dateUtils';
+import { getDateKey, isToday, formatLunar } from '@/lib/dateUtils';
 
 type Tab = 'records' | 'add' | 'style';
 
@@ -17,7 +17,13 @@ export default function Home() {
   const [items, setItems] = useState<MediaItem[]>([]);
   const [style, setStyle] = useState<StyleConfig>(DEFAULT_STYLE);
   const [filterDate, setFilterDate] = useState<string>('');
+  const [lunarDate, setLunarDate] = useState<string>('');
   const styleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 计算农历日期
+  useEffect(() => {
+    setLunarDate(formatLunar(new Date()));
+  }, []);
 
   // 从本地存储层加载记录与样式
   useEffect(() => {
@@ -240,6 +246,15 @@ export default function Home() {
           {/* Footer */}
           <div className="px-6 py-3 border-t border-white/5 flex items-center justify-between text-xs text-white/20">
             <span>高职版 · 大数据竞赛</span>
+            <span
+              className="text-base tracking-widest"
+              style={{
+                fontFamily: "'Ma Shan Zheng', cursive",
+                color: `${style.primaryColor}90`,
+              }}
+            >
+              {lunarDate}
+            </span>
             <span>数据存储于本地浏览器</span>
           </div>
         </div>

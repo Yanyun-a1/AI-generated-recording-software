@@ -17,23 +17,14 @@ export default function DateDisplay({ dateFormat, primaryColor }: DateDisplayPro
 
   if (!now) return null;
 
-  const gregorian = formatGregorian(now);
-  const lunar = formatLunar(now);
-  const isLunar = dateFormat === 'lunar';
+  const text = dateFormat === 'lunar' ? formatLunar(now) : formatGregorian(now);
 
   return (
-    <div className="flex items-center gap-3">
-      <div className="text-right">
-        <div
-          className="text-sm font-medium"
-          style={{ color: primaryColor }}
-        >
-          {isLunar ? lunar : gregorian}
-        </div>
-        <div className="text-[10px] text-white/25 mt-0.5">
-          {isLunar ? gregorian : lunar}
-        </div>
-      </div>
+    <div
+      className="text-sm font-medium whitespace-nowrap"
+      style={{ color: primaryColor }}
+    >
+      {text}
     </div>
   );
 }
