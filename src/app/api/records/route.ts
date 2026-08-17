@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getStore, addItem, removeItem, saveStyle, writeTextFile } from '@/lib/storage';
+import { getStore, addItem, removeItem, updateItem, saveStyle, writeTextFile } from '@/lib/storage';
 import type { MediaItem } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -44,5 +44,17 @@ export async function DELETE(req: Request) {
   const id = new URL(req.url).searchParams.get('id');
   if (!id) return NextResponse.json({ error: '缺少 id' }, { status: 400 });
   await removeItem(id);
+  return NextResponse.json({ ok: true });
+}
+
+/** PUT /api/records → 更新记录标题和内容 */
+export async function PUT(req: Request) {
+  const body = await req.json().catch(() => null);
+  if (!body || !body.id) return NextResponse.json({ error: '缺少 id' }, { status: 400 });
+  const ok = await updateItem(body.id, {
+    title: body.title,
+    content: body.content,
+  });
+  if (!ok) return NextResponse.json({ error: '记录不存在' }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

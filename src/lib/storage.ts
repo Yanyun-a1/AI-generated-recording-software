@@ -71,6 +71,23 @@ export async function removeItem(id: string): Promise<boolean> {
   return true;
 }
 
+export async function updateItem(id: string, updates: { title?: string; content?: string }): Promise<boolean> {
+  const data = await readStore();
+  const idx = data.items.findIndex((i) => i.id === id);
+  if (idx === -1) return false;
+  const item = data.items[idx];
+  if (updates.title !== undefined) item.title = updates.title;
+  if (updates.content !== undefined) {
+    item.content = updates.content;
+    if (item.type === 'text') {
+      await writeTextFile(id, updates.content);
+    }
+  }
+  data.items[idx] = item;
+  await writeStore(data);
+  return true;
+}
+
 export async function saveStyle(style: StyleConfig) {
   const data = await readStore();
   data.style = style;

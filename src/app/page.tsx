@@ -51,6 +51,20 @@ export default function Home() {
     }
   };
 
+  const handleEditItem = async (id: string, title: string, content: string) => {
+    try {
+      const res = await fetch(`/api/records`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, title, content }),
+      });
+      if (!res.ok) return;
+      setItems((prev) => prev.map((i) => i.id === id ? { ...i, title, content } : i));
+    } catch {
+      // ignore
+    }
+  };
+
   // 样式变更本地即时生效，防抖 400ms 后落盘
   const handleStyleChange = (next: StyleConfig) => {
     setStyle(next);
@@ -226,6 +240,7 @@ export default function Home() {
                         key={item.id}
                         item={item}
                         onDelete={handleDeleteItem}
+                        onEdit={handleEditItem}
                         styleConfig={style}
                       />
                     ))
