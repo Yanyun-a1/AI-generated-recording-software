@@ -21,6 +21,7 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [lunarDate, setLunarDate] = useState<string>('');
   const [searchOpen, setSearchOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const styleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -247,9 +248,10 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </button>
-              <div className="relative group">
+              <div className="relative">
                 <button
-                  className="p-1.5 transition-colors text-white/40 hover:text-white/80"
+                  onClick={() => setExportOpen(!exportOpen)}
+                  className={`p-1.5 transition-colors ${exportOpen ? 'bg-white/10 text-white/80' : 'text-white/40 hover:text-white/80'}`}
                   style={{ borderRadius: style.borderRadius - 8 }}
                   title="导出记录"
                 >
@@ -257,17 +259,19 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
                 </button>
-                <div className="absolute right-0 top-full mt-1 hidden group-hover:block bg-black/90 border border-white/10 backdrop-blur-xl z-50 min-w-[120px]" style={{ borderRadius: style.borderRadius - 4 }}>
-                  {(['daily', 'weekly', 'monthly', 'yearly'] as const).map(level => (
-                    <button
-                      key={level}
-                      onClick={() => exportRecords(items, level)}
-                      className="block w-full text-left px-3 py-2 text-xs text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                    >
-                      {{ daily: '每日导出', weekly: '每周导出', monthly: '每月导出', yearly: '每年导出' }[level]}
-                    </button>
-                  ))}
-                </div>
+                {exportOpen && (
+                  <div className="absolute right-0 top-full mt-1 bg-black/90 border border-white/10 backdrop-blur-xl z-50 min-w-[120px]" style={{ borderRadius: style.borderRadius - 4 }}>
+                    {(['daily', 'weekly', 'monthly', 'yearly'] as const).map(level => (
+                      <button
+                        key={level}
+                        onClick={() => { exportRecords(items, level); setExportOpen(false); }}
+                        className="block w-full text-left px-3 py-2 text-xs text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                      >
+                        {{ daily: '每日导出', weekly: '每周导出', monthly: '每月导出', yearly: '每年导出' }[level]}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <button
                 onClick={() => setActiveTab(activeTab === 'add' ? 'records' : 'add')}
