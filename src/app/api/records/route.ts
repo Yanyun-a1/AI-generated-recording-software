@@ -14,19 +14,8 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: '无效的请求体' }, { status: 400 });
 
-  // 保存样式
-  if (body.style) {
-    await saveStyle(body.style);
-    return NextResponse.json({ ok: true });
-  }
-
-  // 保存应用标题
-  if (body.title) {
-    await saveTitle(String(body.title));
-    return NextResponse.json({ ok: true });
-  }
-
   // 新增文字记录：内容同时落盘为 texts/<id>.md
+  // 注意：必须优先于 title 判断（文字记录也携带 title 字段）
   if (body.type === 'text') {
     const content = String(body.content ?? '').trim();
     if (!content) return NextResponse.json({ error: '内容不能为空' }, { status: 400 });
@@ -40,6 +29,18 @@ export async function POST(req: Request) {
     await writeTextFile(item.id, content);
     await addItem(item);
     return NextResponse.json(item);
+  }
+
+  // 保存样式
+  if (body.style) {
+    await saveStyle(body.style);
+    return NextResponse.json({ ok: true });
+  }
+
+  // 保存应用标题
+  if (body.title) {
+    await saveTitle(String(body.title));
+    return NextResponse.json({ ok: true });
   }
 
   return NextResponse.json({ error: '不支持的类型' }, { status: 400 });
