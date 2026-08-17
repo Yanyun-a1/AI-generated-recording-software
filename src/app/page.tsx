@@ -200,7 +200,16 @@ export default function Home() {
                     </svg>
                   </h1>
                 )}
-                <p className="text-xs text-white/30 mt-1">Big Data Competition Recorder</p>
+                <p
+                  className="text-xs mt-1 italic tracking-[0.08em]"
+                  style={{
+                    color: 'rgba(255,255,255,0.35)',
+                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+                  }}
+                >
+                  Tomorrow Will Be Fine
+                </p>
               </div>
               <div className="flex flex-col items-end gap-2">
                 <DateDisplay dateFormat={style.dateFormat} primaryColor={style.primaryColor} />
